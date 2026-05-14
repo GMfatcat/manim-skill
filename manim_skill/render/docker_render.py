@@ -14,6 +14,20 @@ class RenderError(RuntimeError):
     """Raised when a docker render fails, times out, or produces no output."""
 
 
+def _find_output_mp4(out_dir: Path) -> Path | None:
+    """Return the final rendered mp4 under out_dir, ignoring manim's
+    intermediate partial-movie-file fragments. Returns None if none found.
+    """
+    candidates = [
+        p
+        for p in out_dir.rglob("*.mp4")
+        if "partial_movie_files" not in p.parts
+    ]
+    if not candidates:
+        return None
+    return sorted(candidates)[0]
+
+
 def render_spec_to_mp4(spec: SceneSpec, workdir) -> Path:
     """Render a spec to an mp4 inside the manim-skill docker image.
 
@@ -56,9 +70,9 @@ def render_spec_to_mp4(spec: SceneSpec, workdir) -> Path:
     if result.returncode != 0:
         raise RenderError(f"manim render failed:\n{result.stderr}")
 
-    mp4s = sorted(out_dir.rglob("*.mp4"))
-    if not mp4s:
+    mp4 = _find_output_mp4(out_dir)
+    if mp4 is None:
         raise RenderError(
             f"render produced no mp4. stderr:\n{result.stderr}"
         )
-    return mp4s[0]
+    return mp4
