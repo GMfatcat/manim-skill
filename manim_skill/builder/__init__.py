@@ -5,7 +5,12 @@ from pathlib import Path
 from manim_skill.spec.schema import SceneSpec
 
 _ENTRY_SOURCE = (
-    "from manim_skill.builder.spec_scene import SpecScene\n"
+    "from manim_skill.builder.spec_scene import SpecScene as _SpecSceneBase\n"
+    "\n"
+    "\n"
+    "class SpecScene(_SpecSceneBase):\n"
+    "    \"\"\"Entry-point wrapper so manim's scene-discovery can find this class.\"\"\"\n"
+    "\n"
     "\n"
     "__all__ = ['SpecScene']\n"
 )
