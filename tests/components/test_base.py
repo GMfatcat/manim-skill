@@ -25,4 +25,12 @@ def test_get_unknown_raises_keyerror():
 
 
 def test_all_names_includes_registered():
-    assert "Dummy" in base.all_names()
+    class DummyParams2(BaseModel):
+        x: int = 0
+
+    @base.register
+    class Dummy2(base.Component):
+        name = "Dummy2"
+        Params = DummyParams2
+
+    assert "Dummy2" in base.all_names()
