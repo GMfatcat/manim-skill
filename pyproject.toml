@@ -1,0 +1,26 @@
+[project]
+name = "manim-skill"
+version = "0.1.0"
+description = "Concept-to-manim animation pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "manim>=0.19,<0.21",
+    "pydantic>=2.6",
+    "json5>=0.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["manim_skill*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "docker: integration tests that require a running Docker daemon and the manim-skill image",
+]
