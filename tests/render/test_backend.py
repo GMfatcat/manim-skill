@@ -127,3 +127,28 @@ def test_render_batch_uses_cache_to_skip_rendering(tmp_path, monkeypatch):
 
     assert batch2.clip_jobs[0].status == JobStatus.DONE
     assert batch2.clip_jobs[0].beat_jobs[0].status == JobStatus.DONE
+
+
+def test_render_batch_repairer_recovers_failed_raw_beat(tmp_path, monkeypatch):
+    # render_spec_to_mp4 always fails; the repairer "fixes" the beat and
+    # produces an mp4, so the clip still completes.
+    monkeypatch.setattr(backend_mod, "render_spec_to_mp4", _fake_render_raises)
+    monkeypatch.setattr(backend_mod, "stitch_mp4s", _fake_stitch_mp4s)
+    monkeypatch.setattr(backend_mod, "mp4_to_gif", _fake_mp4_to_gif)
+
+    class _FakeRepairer:
+        def render_with_repair(self, beat, work_dir, *, title, aspect_ratio):
+            from manim_skill.llm.repair import RepairResult
+
+            work_dir = Path(work_dir)
+            work_dir.mkdir(parents=True, exist_ok=True)
+            mp4 = work_dir / "repaired.mp4"
+            mp4.write_bytes(b"\x00repaired")
+            return RepairResult(mp4_path=mp4, final_beat=beat, attempts=2)
+
+    specs = [
+        SceneSpec(title="C", beats=[Beat(component="raw", code="broken")])
+    ]
+    batch = render_batch(specs, tmp_path, repairer=_FakeRepairer())
+    assert batch.clip_jobs[0].status == JobStatus.DONE
+    assert batch.clip_jobs[0].beat_jobs[0].status == JobStatus.DONE
