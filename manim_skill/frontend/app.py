@@ -31,6 +31,7 @@ if "stage" not in st.session_state:
     st.session_state.analyze_job_id = None
     st.session_state.cards = []
     st.session_state.render_job_id = None
+    st.session_state.zip_bytes = None
 
 client = get_backend_client()
 
@@ -40,6 +41,7 @@ def _reset() -> None:
     st.session_state.analyze_job_id = None
     st.session_state.cards = []
     st.session_state.render_job_id = None
+    st.session_state.zip_bytes = None
 
 
 stage = st.session_state.stage
@@ -62,6 +64,9 @@ if stage == "upload":
 
 elif stage == "analyzing":
     st.subheader("分析中…")
+    if st.session_state.analyze_job_id is None:
+        _reset()
+        st.rerun()
     try:
         job = client.get_job(st.session_state.analyze_job_id)
     except BackendClientError as exc:
@@ -146,11 +151,13 @@ elif stage == "rendering":
 elif stage == "done":
     st.subheader("4. 完成")
     job_id = st.session_state.render_job_id
-    try:
-        zip_bytes = client.download_result_bytes(job_id)
-    except BackendClientError as exc:
-        st.error(f"下載失敗：{exc}")
-        st.stop()
+    if st.session_state.get("zip_bytes") is None:
+        try:
+            st.session_state.zip_bytes = client.download_result_bytes(job_id)
+        except BackendClientError as exc:
+            st.error(f"下載失敗：{exc}")
+            st.stop()
+    zip_bytes = st.session_state.zip_bytes
     st.download_button(
         "下載 zip",
         data=zip_bytes,
