@@ -34,6 +34,9 @@ class BeatCache:
         return path if path.exists() else None
 
     def put(self, beat: Beat, mp4_path) -> Path:
+        # Not atomic: two identical beats rendering concurrently can both
+        # write here (last-write-wins). Acceptable for the Phase 1 local
+        # backend — a torn file is rare and self-heals on the next run.
         dest = self._path_for(beat)
         shutil.copy2(mp4_path, dest)
         return dest

@@ -34,9 +34,10 @@ def _find_output_mp4(out_dir: Path) -> Path | None:
 def render_spec_to_mp4(spec: SceneSpec, workdir) -> Path:
     """Render a spec to an mp4 inside the manim-skill docker image.
 
-    Plan 1 sandboxing: --network none, --rm, and a hard timeout.
-    Stricter hardening (non-root, read-only fs, resource caps) is
-    added in a later plan.
+    The container is the sandbox boundary for LLM-generated raw beat
+    code: --rm, --network none, non-root (the image's default user),
+    a hard timeout, resource caps (memory/cpus/pids), and a read-only
+    root filesystem with a /tmp tmpfs for manim/Python cache writes.
     """
     workdir = Path(workdir).resolve()
     write_render_inputs(spec, workdir)
