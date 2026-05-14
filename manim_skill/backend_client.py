@@ -93,12 +93,28 @@ class BackendClient:
                 )
             time.sleep(poll_interval)
 
+    def download_result_bytes(self, job_id: str) -> bytes:
+        """The result zip's raw bytes — for in-memory use (e.g. a
+        Streamlit download button)."""
+        return self._request("GET", f"/jobs/{job_id}/result").content
+
     def download_result(self, job_id: str, dest_path) -> Path:
         dest_path = Path(dest_path)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
-        resp = self._request("GET", f"/jobs/{job_id}/result")
-        dest_path.write_bytes(resp.content)
+        dest_path.write_bytes(self.download_result_bytes(job_id))
         return dest_path
+
+    def close(self) -> None:
+        """Close the underlying httpx client. Safe to call once at the
+        end of a process; a long-lived shared client (the Streamlit
+        frontend's @st.cache_resource one) need not be closed."""
+        self._client.close()
+
+    def __enter__(self) -> "BackendClient":
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.close()
 
     def delete_job(self, job_id: str) -> None:
         self._request("DELETE", f"/jobs/{job_id}")
