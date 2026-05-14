@@ -1,0 +1,66 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    image: manim-skill:latest
+    # run as root: the api writes uploads/results to the shared work
+    # volume. The security boundary is the per-beat render containers
+    # (still non-root, --network none, read-only, resource-capped).
+    user: root
+    command: >
+      uvicorn manim_skill.service.app:create_app --factory
+      --host 0.0.0.0 --port 8000
+    ports:
+      - "${MANIM_SKILL_API_PORT:-8000}:8000"
+    environment:
+      MANIM_SKILL_REDIS_URL: redis://redis:6379/0
+      MANIM_SKILL_LLM_BASE_URL: ${MANIM_SKILL_LLM_BASE_URL}
+      MANIM_SKILL_LLM_MODEL: ${MANIM_SKILL_LLM_MODEL}
+      MANIM_SKILL_LLM_CONCURRENCY: ${MANIM_SKILL_LLM_CONCURRENCY:-4}
+      MANIM_SKILL_RENDER_CONCURRENCY: ${MANIM_SKILL_RENDER_CONCURRENCY:-3}
+      MANIM_SKILL_WEB_QUOTA: ${MANIM_SKILL_WEB_QUOTA:-5}
+      MANIM_SKILL_WORK_DIR: ${MANIM_SKILL_WORK_DIR}
+    volumes:
+      - ${MANIM_SKILL_WORK_DIR}:${MANIM_SKILL_WORK_DIR}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    image: manim-skill:latest
+    # run as root: needs the mounted docker socket to spawn render
+    # containers, and writes to the shared work volume.
+    user: root
+    command: python -m manim_skill.service.worker
+    environment:
+      MANIM_SKILL_REDIS_URL: redis://redis:6379/0
+      MANIM_SKILL_LLM_BASE_URL: ${MANIM_SKILL_LLM_BASE_URL}
+      MANIM_SKILL_LLM_MODEL: ${MANIM_SKILL_LLM_MODEL}
+      MANIM_SKILL_LLM_CONCURRENCY: ${MANIM_SKILL_LLM_CONCURRENCY:-4}
+      MANIM_SKILL_RENDER_CONCURRENCY: ${MANIM_SKILL_RENDER_CONCURRENCY:-3}
+      MANIM_SKILL_WORK_DIR: ${MANIM_SKILL_WORK_DIR}
+    volumes:
+      - ${MANIM_SKILL_WORK_DIR}:${MANIM_SKILL_WORK_DIR}
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  ui:
+    image: manim-skill:latest
+    command: >
+      streamlit run manim_skill/frontend/app.py
+      --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "${MANIM_SKILL_UI_PORT:-8501}:8501"
+    environment:
+      MANIM_SKILL_BACKEND: http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
