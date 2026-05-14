@@ -3,6 +3,10 @@ from __future__ import annotations
 import functools
 import shutil
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from manim_skill.llm.repair import BeatRepairer
 
 from manim_skill.render.bundle import BundleEntry, bundle_clips
 from manim_skill.render.cache import BeatCache
@@ -20,40 +24,55 @@ def _render_beat_job(
     clip: ClipJob,
     clip_dir: Path,
     cache: BeatCache | None,
+    repairer: "BeatRepairer | None",
 ) -> BeatJob:
     """Render one beat as a standalone 1-beat spec.
 
-    On success the beat mp4 is copied into `clip_dir` as
-    `beat_NN.mp4` (stitch requires all inputs in one directory). A
-    RenderError is caught and recorded on the BeatJob — a failed beat
-    must not stop the rest of the clip or batch.
+    On success the beat mp4 is copied into `clip_dir` as `beat_NN.mp4`
+    (stitch requires all inputs in one directory). A raw beat is
+    rendered through `repairer` when one is supplied — the repair loop
+    may rewrite the beat's code, which is recorded back on the BeatJob.
+    A RenderError is caught and recorded — a failed beat must not stop
+    the rest of the clip or batch. The cache is keyed on the ORIGINAL
+    beat, so a re-run skips both render and repair.
     """
     index, beat_job = indexed_beat
     beat_job.status = JobStatus.RENDERING
     dest = clip_dir / f"beat_{index:02d}.mp4"
+    original_beat = beat_job.beat
 
     try:
         if cache is not None:
-            cached = cache.get(beat_job.beat)
+            cached = cache.get(original_beat)
             if cached is not None:
                 shutil.copy2(cached, dest)
                 beat_job.mp4_path = dest
                 beat_job.status = JobStatus.DONE
                 return beat_job
 
-        one_beat_spec = SceneSpec(
-            title=clip.spec.title,
-            aspect_ratio=clip.spec.aspect_ratio,
-            beats=[beat_job.beat],
-        )
-        rendered = render_spec_to_mp4(
-            one_beat_spec, clip_dir / f"beat_{index:02d}_work"
-        )
+        beat_work = clip_dir / f"beat_{index:02d}_work"
+        if repairer is not None and original_beat.component == "raw":
+            result = repairer.render_with_repair(
+                original_beat,
+                beat_work,
+                title=clip.spec.title,
+                aspect_ratio=clip.spec.aspect_ratio,
+            )
+            rendered = result.mp4_path
+            beat_job.beat = result.final_beat
+        else:
+            one_beat_spec = SceneSpec(
+                title=clip.spec.title,
+                aspect_ratio=clip.spec.aspect_ratio,
+                beats=[original_beat],
+            )
+            rendered = render_spec_to_mp4(one_beat_spec, beat_work)
+
         shutil.copy2(rendered, dest)
         beat_job.mp4_path = dest
         beat_job.status = JobStatus.DONE
         if cache is not None:
-            cache.put(beat_job.beat, dest)
+            cache.put(original_beat, dest)
     except RenderError as exc:
         beat_job.status = JobStatus.FAILED
         beat_job.error = str(exc)
@@ -67,6 +86,7 @@ def render_batch(
     *,
     max_workers: int = 3,
     cache: BeatCache | None = None,
+    repairer: "BeatRepairer | None" = None,
 ) -> BatchJob:
     """Render a batch of scene specs into one zip bundle.
 
@@ -97,7 +117,11 @@ def render_batch(
         clip_dir.mkdir(parents=True, exist_ok=True)
 
         worker = functools.partial(
-            _render_beat_job, clip=clip, clip_dir=clip_dir, cache=cache
+            _render_beat_job,
+            clip=clip,
+            clip_dir=clip_dir,
+            cache=cache,
+            repairer=repairer,
         )
         queue.run_all(worker, list(enumerate(clip.beat_jobs)))
 
