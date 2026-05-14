@@ -9,10 +9,15 @@ dependencies = [
     "json5>=0.9",
     "openai>=1.0",
     "pypdf>=4.0",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "rq>=1.16",
+    "redis>=5.0",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "fakeredis>=2.21", "httpx>=0.27"]
 
 [project.scripts]
 manim-skill = "manim_skill.cli:main"
