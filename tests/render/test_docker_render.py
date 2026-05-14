@@ -56,3 +56,11 @@ def test_find_output_mp4_returns_none_when_empty(tmp_path):
     from manim_skill.render.docker_render import _find_output_mp4
 
     assert _find_output_mp4(tmp_path) is None
+
+
+def test_sandbox_hardening_constants_defined():
+    from manim_skill.render import docker_render
+
+    assert docker_render.MEMORY_LIMIT
+    assert docker_render.CPU_LIMIT
+    assert docker_render.PIDS_LIMIT

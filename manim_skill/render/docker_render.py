@@ -8,6 +8,9 @@ from manim_skill.spec.schema import SceneSpec
 
 IMAGE = "manim-skill:latest"
 RENDER_TIMEOUT_SECONDS = 300
+MEMORY_LIMIT = "2g"
+CPU_LIMIT = "2"
+PIDS_LIMIT = "256"
 
 
 class RenderError(RuntimeError):
@@ -43,8 +46,15 @@ def render_spec_to_mp4(spec: SceneSpec, workdir) -> Path:
     cmd = [
         "docker", "run", "--rm",
         "--network", "none",
+        "--memory", MEMORY_LIMIT,
+        "--cpus", CPU_LIMIT,
+        "--pids-limit", PIDS_LIMIT,
+        "--read-only",
+        "--tmpfs", "/tmp",
         "-v", f"{workdir}:/work",
         "-e", "MANIM_SKILL_SPEC=/work/spec.json",
+        "-e", "HOME=/tmp",
+        "-e", "PYTHONDONTWRITEBYTECODE=1",
         "-w", "/work",
         IMAGE,
         "manim", "-ql",
