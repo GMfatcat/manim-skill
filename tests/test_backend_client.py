@@ -128,3 +128,37 @@ def test_get_catalog(tmp_path, monkeypatch):
     client, _store = _backend(tmp_path, monkeypatch)
     catalog = client.get_catalog()
     assert "TextBeat" in catalog
+
+
+def test_download_result_bytes(tmp_path, monkeypatch):
+    import io
+
+    client, store = _backend(tmp_path, monkeypatch)
+    src_zip = tmp_path / "src.zip"
+    with zipfile.ZipFile(src_zip, "w") as zf:
+        zf.writestr("manifest.json", "{}")
+    store.save(
+        ServiceJob(
+            job_id="j1",
+            type="render",
+            status=JobStatus.DONE,
+            result={"zip_path": str(src_zip)},
+        )
+    )
+    data = client.download_result_bytes("j1")
+    assert isinstance(data, bytes)
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        assert "manifest.json" in zf.namelist()
+
+
+def test_close_closes_the_http_client(tmp_path, monkeypatch):
+    client, _store = _backend(tmp_path, monkeypatch)
+    client.close()
+    assert client._client.is_closed
+
+
+def test_context_manager_closes(tmp_path, monkeypatch):
+    client, _store = _backend(tmp_path, monkeypatch)
+    with client as entered:
+        assert entered is client
+    assert client._client.is_closed
