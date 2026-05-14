@@ -1,0 +1,24 @@
+這是模擬 LLM 輸出的文字，外面包了一些散文。
+
+```json
+{
+  "title": "Plan 1 端到端測試",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "TextBeat",
+      "params": {"text": "Self-Attention", "subtitle": "概念示範", "style": "title"},
+      "caption": "開場標題",
+      "duration": 1.0
+    },
+    {
+      "component": "CodeWalkthrough",
+      "params": {"code": "scores = Q @ K.T\nweights = softmax(scores)", "language": "python"},
+      "caption": "關鍵程式碼",
+      "duration": 1.0
+    }
+  ]
+}
+```
+
+希望這份動畫有幫助。

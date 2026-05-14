@@ -1,0 +1,10 @@
+{
+  "title": "Raw beat 示範",
+  "beats": [
+    {
+      "component": "raw",
+      "code": "circle = Circle()\nself.play(Create(circle))\nself.wait(1)",
+      "duration": 0.5
+    }
+  ]
+}
