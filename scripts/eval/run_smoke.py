@@ -29,6 +29,14 @@ import time
 import traceback
 from pathlib import Path
 
+# Force stdout/stderr to UTF-8 so Unicode in concept titles (em-dashes,
+# non-breaking hyphens) doesn't crash on Windows cp950 consoles.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, OSError):
+    pass
+
 from manim_skill.llm.analyze import analyze
 from manim_skill.llm.catalog import build_component_catalog
 from manim_skill.llm.client import OpenAIClient
@@ -37,11 +45,22 @@ from manim_skill.llm.input_prep import prepare_input
 from manim_skill.llm.pipeline import generate_specs, run_pipeline
 
 
+_KEY_FILE = Path(__file__).resolve().parents[2] / "tests" / "realworld-test" / "key.txt"
+
+
 def _api_key() -> str:
     key = os.environ.get("OpenRouterKey")
-    if not key:
-        sys.exit("OpenRouterKey env var is not set")
-    return key
+    if key:
+        return key.strip()
+    if _KEY_FILE.exists():
+        for line in _KEY_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                return line
+    sys.exit(
+        f"No OpenRouter key found. Set OpenRouterKey env var or write the "
+        f"key into {_KEY_FILE}"
+    )
 
 
 def _make_client(model: str) -> OpenAIClient:
@@ -77,7 +96,7 @@ def stage_analyze(model: str, input_path: Path, kind: str, workdir: Path) -> Non
         encoding="utf-8",
     )
     for i, c in enumerate(concepts):
-        print(f"  [{i}] {c.title}")
+        print(f"  [{i}] {c.concept}")
     print(f"→ {out}")
 
 
@@ -104,14 +123,14 @@ def stage_codegen(model: str, input_path: Path, kind: str, workdir: Path) -> Non
         t0 = time.perf_counter()
         try:
             spec = generate_spec(client, concept, catalog)
-            specs.append((i, concept.title, spec))
+            specs.append((i, concept.concept, spec))
             (workdir / f"spec_{i:02d}.json").write_text(
                 spec.model_dump_json(indent=2), encoding="utf-8"
             )
-            print(f"  [{i}] OK  {concept.title} — {len(spec.beats)} beats ({time.perf_counter() - t0:.1f}s)")
+            print(f"  [{i}] OK  {concept.concept} — {len(spec.beats)} beats ({time.perf_counter() - t0:.1f}s)")
         except CodegenError as e:
-            fails.append((i, concept.title, str(e)))
-            print(f"  [{i}] FAIL {concept.title} — {e}")
+            fails.append((i, concept.concept, str(e)))
+            print(f"  [{i}] FAIL {concept.concept} — {e}")
 
     summary = {
         "model": model,

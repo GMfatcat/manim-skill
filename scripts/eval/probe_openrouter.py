@@ -12,18 +12,28 @@ from __future__ import annotations
 import json
 import os
 import sys
+from pathlib import Path
 
 import httpx
 
 
 BASE_URL = "https://openrouter.ai/api/v1"
+KEY_FILE = Path(__file__).resolve().parents[2] / "tests" / "realworld-test" / "key.txt"
 
 
 def _api_key() -> str:
     key = os.environ.get("OpenRouterKey")
-    if not key:
-        sys.exit("OpenRouterKey env var is not set")
-    return key
+    if key:
+        return key.strip()
+    if KEY_FILE.exists():
+        for line in KEY_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                return line
+    sys.exit(
+        f"No OpenRouter key found. Set OpenRouterKey env var or write the "
+        f"key into {KEY_FILE}"
+    )
 
 
 def list_models() -> None:

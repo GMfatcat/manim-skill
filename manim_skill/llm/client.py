@@ -46,7 +46,11 @@ class OpenAIClient:
                 {"role": "user", "content": user},
             ],
         )
-        return response.choices[0].message.content or ""
+        # OpenRouter free models occasionally return `choices: null` on 200 OK.
+        choices = response.choices or []
+        if not choices:
+            return ""
+        return choices[0].message.content or ""
 
 
 class FakeLLMClient:
