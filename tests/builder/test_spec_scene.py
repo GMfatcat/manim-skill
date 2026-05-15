@@ -36,3 +36,21 @@ def test_load_spec_from_env_missing_var_raises(monkeypatch):
     monkeypatch.delenv(SPEC_ENV_VAR, raising=False)
     with pytest.raises(RuntimeError):
         load_spec_from_env()
+
+
+def test_build_caption_short_text_unchanged_width():
+    from manim_skill.builder.spec_scene import _build_caption
+
+    caption = _build_caption("short caption")
+    assert caption.width <= 13.0
+
+
+def test_build_caption_long_text_fits_width():
+    from manim_skill.builder.spec_scene import _build_caption
+
+    long_text = (
+        "Stream width n×C; H^res, H^pre, H^post are learnable — "
+        "identity mapping is now broken and we keep expanding the explanation"
+    )
+    caption = _build_caption(long_text)
+    assert caption.width <= 13.0

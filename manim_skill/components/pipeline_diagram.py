@@ -50,6 +50,9 @@ class PipelineDiagram(Component):
             diagram.add(
                 Text(params.title, font_size=28).next_to(diagram, UP)
             )
+        # Auto-fit to camera width (16:9 frame is 14.22 units; target safe 12.0).
+        if diagram.width > 12.0:
+            diagram.scale_to_fit_width(12.0)
         return diagram
 
     def animate(

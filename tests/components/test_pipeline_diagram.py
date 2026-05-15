@@ -36,3 +36,25 @@ def test_three_stages_have_two_arrows():
 def test_stages_requires_at_least_one():
     with pytest.raises(ValidationError):
         PipelineDiagramParams(stages=[])
+
+
+def test_diagram_fits_camera_width_with_many_stages():
+    comp = PipelineDiagram()
+    mobj = comp.build(
+        PipelineDiagramParams(
+            stages=["load", "tokenize", "embed", "encode", "attend", "decode", "emit"]
+        )
+    )
+    assert mobj.width <= 12.0
+
+
+def test_diagram_fits_camera_width_with_long_title():
+    comp = PipelineDiagram()
+    long_title = (
+        "Hyper-Connections (HC) - widen the residual stream, add learnable mixing layer here"
+    )
+    assert len(long_title) >= 80
+    mobj = comp.build(
+        PipelineDiagramParams(stages=["a", "b", "c"], title=long_title)
+    )
+    assert mobj.width <= 12.0

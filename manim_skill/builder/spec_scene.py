@@ -14,6 +14,24 @@ from manim_skill.spec.validate import validate_spec
 
 SPEC_ENV_VAR = "MANIM_SKILL_SPEC"
 
+# Max caption width in manim units. 16:9 camera frame is 14.22 wide; keep some
+# horizontal padding so long captions don't clip at the edges.
+_CAPTION_MAX_WIDTH = 13.0
+
+
+def _build_caption(text: str) -> Text:
+    """Build a bottom caption Text, shrinking it to fit if too wide.
+
+    Single-line Text with no max-width clips long captions at the camera
+    edges. We keep the single-line look (no manual line breaks needed from
+    the LLM) and just scale the mobject down when it exceeds the safe width.
+    """
+    caption = Text(text, font_size=28)
+    if caption.width > _CAPTION_MAX_WIDTH:
+        caption.scale_to_fit_width(_CAPTION_MAX_WIDTH)
+    caption.to_edge(DOWN)
+    return caption
+
 
 def load_spec_from_env() -> SceneSpec:
     """Load and validate the spec pointed to by MANIM_SKILL_SPEC."""
@@ -47,7 +65,7 @@ class SpecScene(MovingCameraScene):
             component.animate(self, mobject, params)
 
         if beat.caption:
-            caption = Text(beat.caption, font_size=28).to_edge(DOWN)
+            caption = _build_caption(beat.caption)
             self.play(FadeIn(caption))
 
         if beat.camera:
