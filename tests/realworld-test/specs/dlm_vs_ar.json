@@ -1,0 +1,72 @@
+{
+  "title": "AR vs Diffusion Language Models",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "AR vs Diffusion Language Models",
+        "subtitle": "Two ways to turn noise into text",
+        "style": "title"
+      },
+      "duration": 2.5
+    },
+    {
+      "component": "PipelineDiagram",
+      "params": {
+        "stages": ["t₁", "t₂", "t₃", "t₄", "t₅"],
+        "title": "AR  —  one token at a time, strictly left to right"
+      },
+      "duration": 4.0,
+      "caption": "Each step adds one token, conditioned on all previous tokens"
+    },
+    {
+      "component": "PipelineDiagram",
+      "params": {
+        "stages": ["[MASK × N]", "denoise 1", "denoise 2", "…", "output"],
+        "title": "dLM  —  iterative parallel denoising over the whole sequence"
+      },
+      "duration": 4.5,
+      "caption": "All positions get updated each step; 16–64 steps converge to the answer"
+    },
+    {
+      "component": "FormulaBreakdown",
+      "params": {
+        "formula": "\\mathcal{L}_{\\text{dLM}} = \\mathbb{E}_{t \\sim U(0,1)} \\left[ \\tfrac{1}{t} \\sum_{i \\in M_t} -\\log p_\\theta(x_i \\mid x_{\\setminus M_t}) \\right]",
+        "title": "Training objective: BERT-MLM generalised to all mask ratios"
+      },
+      "duration": 5.0
+    },
+    {
+      "component": "PlotEvolution",
+      "params": {
+        "series": [60, 65, 70, 72, 75, 78, 80, 82, 85, 88, 90, 92, 95, 100],
+        "title": "AR throughput  —  bound by sequential decoding (tok/s)"
+      },
+      "duration": 3.5
+    },
+    {
+      "component": "PlotEvolution",
+      "params": {
+        "series": [200, 480, 700, 850, 920, 970, 1000],
+        "title": "dLM throughput  —  parallel denoising fills the GPU (tok/s)"
+      },
+      "duration": 3.5,
+      "caption": "Mercury 2 on H100: ~1000 tok/s without specialised hardware"
+    },
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "Trade-offs",
+        "style": "bullets",
+        "bullets": [
+          "4–10× throughput on the right shape of workload",
+          "Fixed output length — needs DreamOn / LR-DLLM tricks",
+          "Quality drops under aggressive parallel decoding",
+          "Long context + short output: AR still wins"
+        ]
+      },
+      "duration": 5.0
+    }
+  ]
+}

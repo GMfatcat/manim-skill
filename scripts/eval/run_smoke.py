@@ -1,0 +1,167 @@
+"""Run the LLM half of manim-skill against an OpenRouter free model.
+
+Two stages:
+
+  analyze   — read input, call LLM `analyze`, dump the concepts it found
+  codegen   — analyze + LLM `generate_spec` per concept, dump validated specs
+  full      — codegen + render_batch (Docker required)
+
+Reads the API key from the OpenRouterKey env var.
+
+Usage:
+    python scripts/eval/run_smoke.py <stage> <model> <input-path> <kind> <workdir>
+
+Examples:
+    python scripts/eval/run_smoke.py analyze nvidia/nemotron-nano-9b-v2:free \\
+        tests/realworld-test/multihead_attention.py code out/smoke/mha-nano
+    python scripts/eval/run_smoke.py codegen openai/gpt-oss-120b:free \\
+        tests/realworld-test/dlm_report.html text out/smoke/dlm-gptoss
+    python scripts/eval/run_smoke.py full nvidia/nemotron-nano-9b-v2:free \\
+        tests/realworld-test/mHC.pdf pdf out/smoke/mhc-nano
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+import traceback
+from pathlib import Path
+
+from manim_skill.llm.analyze import analyze
+from manim_skill.llm.catalog import build_component_catalog
+from manim_skill.llm.client import OpenAIClient
+from manim_skill.llm.codegen import CodegenError, generate_spec
+from manim_skill.llm.input_prep import prepare_input
+from manim_skill.llm.pipeline import generate_specs, run_pipeline
+
+
+def _api_key() -> str:
+    key = os.environ.get("OpenRouterKey")
+    if not key:
+        sys.exit("OpenRouterKey env var is not set")
+    return key
+
+
+def _make_client(model: str) -> OpenAIClient:
+    return OpenAIClient(
+        base_url="https://openrouter.ai/api/v1",
+        model=model,
+        api_key=_api_key(),
+        timeout=180.0,
+    )
+
+
+def _read_input(path: Path, kind: str):
+    if kind == "pdf":
+        return path.read_bytes()
+    return path.read_text(encoding="utf-8")
+
+
+def stage_analyze(model: str, input_path: Path, kind: str, workdir: Path) -> None:
+    workdir.mkdir(parents=True, exist_ok=True)
+    client = _make_client(model)
+    content = _read_input(input_path, kind)
+    prepared = prepare_input(content, kind)
+    print(f"[prepare_input] {len(prepared)} chars")
+
+    t0 = time.perf_counter()
+    concepts = analyze(client, prepared)
+    elapsed = time.perf_counter() - t0
+    print(f"[analyze] {len(concepts)} concept(s) in {elapsed:.1f}s")
+
+    out = workdir / "concepts.json"
+    out.write_text(
+        json.dumps([c.model_dump() for c in concepts], indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    for i, c in enumerate(concepts):
+        print(f"  [{i}] {c.title}")
+    print(f"→ {out}")
+
+
+def stage_codegen(model: str, input_path: Path, kind: str, workdir: Path) -> None:
+    workdir.mkdir(parents=True, exist_ok=True)
+    client = _make_client(model)
+    content = _read_input(input_path, kind)
+
+    prepared = prepare_input(content, kind)
+    print(f"[prepare_input] {len(prepared)} chars")
+
+    t0 = time.perf_counter()
+    concepts = analyze(client, prepared)
+    print(f"[analyze] {len(concepts)} concept(s) in {time.perf_counter() - t0:.1f}s")
+    (workdir / "concepts.json").write_text(
+        json.dumps([c.model_dump() for c in concepts], indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    catalog = build_component_catalog()
+    specs = []
+    fails = []
+    for i, concept in enumerate(concepts):
+        t0 = time.perf_counter()
+        try:
+            spec = generate_spec(client, concept, catalog)
+            specs.append((i, concept.title, spec))
+            (workdir / f"spec_{i:02d}.json").write_text(
+                spec.model_dump_json(indent=2), encoding="utf-8"
+            )
+            print(f"  [{i}] OK  {concept.title} — {len(spec.beats)} beats ({time.perf_counter() - t0:.1f}s)")
+        except CodegenError as e:
+            fails.append((i, concept.title, str(e)))
+            print(f"  [{i}] FAIL {concept.title} — {e}")
+
+    summary = {
+        "model": model,
+        "input": str(input_path),
+        "kind": kind,
+        "concepts": len(concepts),
+        "specs_ok": len(specs),
+        "specs_failed": len(fails),
+        "failures": [{"i": i, "title": t, "error": e} for i, t, e in fails],
+    }
+    (workdir / "summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"\n[summary] {len(specs)}/{len(concepts)} specs validated")
+
+
+def stage_full(model: str, input_path: Path, kind: str, workdir: Path) -> None:
+    workdir.mkdir(parents=True, exist_ok=True)
+    client = _make_client(model)
+    content = _read_input(input_path, kind)
+
+    print(f"[full pipeline] model={model} input={input_path} kind={kind}")
+    t0 = time.perf_counter()
+    batch = run_pipeline(client, content, kind, str(workdir), max_workers=2)
+    elapsed = time.perf_counter() - t0
+    print(f"[done] {elapsed:.1f}s")
+    print(f"  clips: {len(batch.clip_jobs)}")
+    print(f"  zip:   {batch.zip_path}")
+    for clip in batch.clip_jobs:
+        ok_beats = sum(1 for b in clip.beat_jobs if b.mp4_path)
+        print(f"  - {clip.spec.title}: {ok_beats}/{len(clip.beat_jobs)} beats ok, mp4={clip.mp4_path}")
+
+
+def main() -> None:
+    if len(sys.argv) < 6:
+        sys.exit(__doc__)
+    stage, model, input_path, kind, workdir = sys.argv[1:6]
+    if kind not in ("text", "code", "pdf"):
+        sys.exit(f"kind must be text|code|pdf, got {kind!r}")
+
+    fn = {"analyze": stage_analyze, "codegen": stage_codegen, "full": stage_full}.get(stage)
+    if fn is None:
+        sys.exit(f"stage must be analyze|codegen|full, got {stage!r}")
+
+    try:
+        fn(model, Path(input_path), kind, Path(workdir))
+    except Exception:
+        traceback.print_exc()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

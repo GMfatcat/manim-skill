@@ -1,0 +1,78 @@
+{
+  "title": "Manifold-Constrained Hyper-Connections (mHC)",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "mHC: Manifold-Constrained Hyper-Connections",
+        "subtitle": "DeepSeek-AI — restoring identity mapping on top of Hyper-Connections",
+        "style": "title"
+      },
+      "duration": 3.0
+    },
+    {
+      "component": "PipelineDiagram",
+      "params": {
+        "stages": ["x_l", "F(·,W_l)", "+", "x_{l+1}"],
+        "title": "Residual Connection  —  identity mapping is the whole point"
+      },
+      "duration": 4.0,
+      "caption": "ResNet: x_{l+1} = x_l + F(x_l, W_l). Recursing gives x_L = x_l + Σ F(x_i, W_i)."
+    },
+    {
+      "component": "PipelineDiagram",
+      "params": {
+        "stages": ["x_l (n×C)", "H^pre · x_l", "F", "H^post⊤", "+ H^res · x_l"],
+        "title": "Hyper-Connections (HC)  —  widen the residual stream, add learnable mixing"
+      },
+      "duration": 5.0,
+      "caption": "Stream width n×C; H^res, H^pre, H^post are learnable — identity mapping is now broken"
+    },
+    {
+      "component": "FormulaBreakdown",
+      "params": {
+        "formula": "x_{l+1} = H^{\\text{res}}_l \\, x_l + (H^{\\text{post}}_l)^{\\top} F(H^{\\text{pre}}_l \\, x_l, W_l)",
+        "title": "HC single-layer propagation"
+      },
+      "duration": 4.5
+    },
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "Why unconstrained HC hurts",
+        "style": "bullets",
+        "bullets": [
+          "Identity mapping property is lost across deep stacks",
+          "Average signal intensity is no longer conserved",
+          "Training becomes unstable at scale",
+          "Plus: extra memory access overhead per layer"
+        ]
+      },
+      "duration": 5.0
+    },
+    {
+      "component": "PipelineDiagram",
+      "params": {
+        "stages": ["x_l", "𝒫_ℳ(H^pre)", "F", "𝒫_ℳ(H^post⊤)", "+ 𝒫_ℳ(H^res) · x_l"],
+        "title": "mHC  —  project H matrices onto a constrained manifold ℳ"
+      },
+      "duration": 5.0,
+      "caption": "Manifold projection restores identity mapping while keeping HC's expressivity"
+    },
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "Infrastructure also matters",
+        "style": "bullets",
+        "bullets": [
+          "Kernel fusion to cut memory traffic",
+          "Selective recomputing to lower activation memory",
+          "Overlap manifold projection with DualPipe communication",
+          "End result: stable, scalable, no overhead vs vanilla HC"
+        ]
+      },
+      "duration": 5.5
+    }
+  ]
+}

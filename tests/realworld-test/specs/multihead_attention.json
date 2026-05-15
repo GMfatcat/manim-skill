@@ -1,0 +1,65 @@
+{
+  "title": "Multi-Head Self-Attention",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "Multi-Head Self-Attention",
+        "subtitle": "Q K V projections, scaled dot product, parallel heads",
+        "style": "title"
+      },
+      "duration": 2.5
+    },
+    {
+      "component": "FormulaBreakdown",
+      "params": {
+        "formula": "\\text{Attention}(Q, K, V) = \\text{softmax}\\!\\left(\\frac{Q K^{\\top}}{\\sqrt{d_k}}\\right) V",
+        "title": "Scaled Dot-Product Attention"
+      },
+      "duration": 4.0
+    },
+    {
+      "component": "CodeWalkthrough",
+      "params": {
+        "code": "q = self.q_proj(x).view(B, L, H, Dh).transpose(1, 2)\nk = self.k_proj(x).view(B, L, H, Dh).transpose(1, 2)\nv = self.v_proj(x).view(B, L, H, Dh).transpose(1, 2)\n\nscores = q @ k.transpose(-2, -1) / math.sqrt(Dh)\nattn   = torch.softmax(scores, dim=-1)\nctx    = attn @ v\n\nctx = ctx.transpose(1, 2).contiguous().view(B, L, D)\nreturn self.out_proj(ctx)",
+        "language": "python",
+        "highlight_lines": [[1, 3], [5, 7], [9, 10]]
+      },
+      "duration": 7.0,
+      "caption": "Forward pass: project, split heads, score, attend, merge"
+    },
+    {
+      "component": "MatrixOp",
+      "params": {
+        "op": "matmul",
+        "a_label": "Q",
+        "b_label": "Kᵀ",
+        "result_label": "scores"
+      },
+      "duration": 3.5
+    },
+    {
+      "component": "AttentionFlow",
+      "params": {
+        "tokens": ["The", "cat", "sat", "on", "the", "mat"],
+        "highlight": "cat",
+        "weights": [0.05, 0.40, 0.20, 0.10, 0.05, 0.20]
+      },
+      "duration": 4.0
+    },
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "Why multiple heads",
+        "style": "bullets",
+        "bullets": [
+          "Each head learns a different relation pattern",
+          "Heads run in parallel — same compute, richer signal",
+          "Outputs concatenated, projected back to model dim"
+        ]
+      },
+      "duration": 4.5
+    }
+  ]
+}
