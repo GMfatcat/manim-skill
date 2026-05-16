@@ -89,7 +89,7 @@ A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beat
 
 ## Components
 
-The library ships 11 core components plus a text helper. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
+The library ships 14 core components plus a text helper. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
 
 | Component | For |
 |-----------|-----|
@@ -100,7 +100,10 @@ The library ships 11 core components plus a text helper. Each declares a Pydanti
 | `PlotEvolution` | a numeric series as a line graph |
 | `FunctionPlot` | y = f(x) on labeled axes (sigmoid/tanh/loss curves/…) |
 | `HeatmapBeat` | a 2D array as a colored grid (attention / confusion matrices) |
-| `PipelineDiagram` | labeled boxes + arrows |
+| `PipelineDiagram` | linear labeled boxes + arrows |
+| `GraphBeat` | arbitrary nodes + edges (directed or undirected), pick a layout |
+| `TableBeat` | paper-style results table, optional cell highlight |
+| `OptimizationPath` | dot follows f(x) curve toward a minimum, leaves a trace |
 | `FormulaBreakdown` | a LaTeX formula |
 | `FormulaWalkthrough` | a LaTeX formula whose parts get boxed + captioned step by step |
 | `GeometryAnim` | basic shapes + transforms |

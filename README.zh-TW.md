@@ -89,7 +89,7 @@ print(batch.zip_path)
 
 ## 元件
 
-元件庫內含 11 個核心元件加一個文字輔助元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
+元件庫內含 14 個核心元件加一個文字輔助元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
 
 | 元件 | 用途 |
 |------|------|
@@ -100,7 +100,10 @@ print(batch.zip_path)
 | `PlotEvolution` | 把數值序列畫成折線圖 |
 | `FunctionPlot` | y = f(x) 帶座標軸（sigmoid / tanh / loss 曲線 …） |
 | `HeatmapBeat` | 2D 陣列彩色熱圖（attention / confusion matrix） |
-| `PipelineDiagram` | 標籤方塊 + 箭頭 |
+| `PipelineDiagram` | 線性標籤方塊 + 箭頭 |
+| `GraphBeat` | 任意 nodes + edges（有向或無向），可選佈局 |
+| `TableBeat` | 論文式結果表格，可標記某 cell |
+| `OptimizationPath` | 紅點沿 f(x) 曲線走向最小值，留下軌跡 |
 | `FormulaBreakdown` | LaTeX 公式 |
 | `FormulaWalkthrough` | LaTeX 公式逐段框選 + 加註解 |
 | `GeometryAnim` | 基本形狀 + 變換 |

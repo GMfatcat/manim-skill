@@ -1,0 +1,52 @@
+{
+  "title": "TableBeat / GraphBeat / OptimizationPath 視覺驗收",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "TableBeat",
+      "params": {
+        "headers": ["accuracy", "params", "latency"],
+        "rows": [
+          ["72.1%", "8M", "12 ms"],
+          ["79.5%", "32M", "45 ms"],
+          ["83.2%", "120M", "180 ms"]
+        ],
+        "row_labels": ["small", "base", "large"],
+        "title": "Benchmark on dev set",
+        "highlight_cells": [[2, 0]]
+      },
+      "duration": 5.0
+    },
+    {
+      "component": "GraphBeat",
+      "params": {
+        "nodes": ["Input", "Embed", "Attn", "FFN", "Norm", "Output"],
+        "edges": [
+          ["Input", "Embed"],
+          ["Embed", "Attn"],
+          ["Attn", "Norm"],
+          ["Norm", "FFN"],
+          ["FFN", "Output"],
+          ["Embed", "Norm"]
+        ],
+        "directed": true,
+        "layout": "spring",
+        "title": "Transformer block (residual skips shown)"
+      },
+      "duration": 4.0
+    },
+    {
+      "component": "OptimizationPath",
+      "params": {
+        "expression": "0.5 * x**2 + 0.3 * cos(3 * x)",
+        "x_range": [-3, 3, 1],
+        "y_range": [-1, 5, 1],
+        "start_x": -2.5,
+        "min_x": 0.15,
+        "n_steps": 10,
+        "title": "Gradient descent on a non-convex loss"
+      },
+      "duration": 1.0
+    }
+  ]
+}

@@ -276,6 +276,64 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "type": "object"
 }
 
+### GraphBeat
+{
+  "properties": {
+    "nodes": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "directed": {
+      "default": false,
+      "title": "Directed",
+      "type": "boolean"
+    },
+    "layout": {
+      "default": "spring",
+      "enum": [
+        "spring",
+        "circular",
+        "tree",
+        "kamada_kawai",
+        "planar"
+      ],
+      "title": "Layout",
+      "type": "string"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "nodes"
+  ],
+  "title": "GraphBeatParams",
+  "type": "object"
+}
+
 ### HeatmapBeat
 {
   "properties": {
@@ -407,6 +465,93 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "type": "object"
 }
 
+### OptimizationPath
+{
+  "properties": {
+    "expression": {
+      "title": "Expression",
+      "type": "string"
+    },
+    "x_range": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 2,
+      "title": "X Range",
+      "type": "array"
+    },
+    "y_range": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 2,
+      "title": "Y Range",
+      "type": "array"
+    },
+    "start_x": {
+      "title": "Start X",
+      "type": "number"
+    },
+    "min_x": {
+      "title": "Min X",
+      "type": "number"
+    },
+    "n_steps": {
+      "default": 8,
+      "minimum": 1,
+      "title": "N Steps",
+      "type": "integer"
+    },
+    "x_label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "X Label"
+    },
+    "y_label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Y Label"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "expression",
+    "x_range",
+    "y_range",
+    "start_x",
+    "min_x"
+  ],
+  "title": "OptimizationPathParams",
+  "type": "object"
+}
+
 ### PipelineDiagram
 {
   "properties": {
@@ -466,6 +611,66 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
     "series"
   ],
   "title": "PlotEvolutionParams",
+  "type": "object"
+}
+
+### TableBeat
+{
+  "properties": {
+    "headers": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Headers",
+      "type": "array"
+    },
+    "rows": {
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "minItems": 1,
+      "title": "Rows",
+      "type": "array"
+    },
+    "row_labels": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Row Labels",
+      "type": "array"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "highlight_cells": {
+      "items": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "title": "Highlight Cells",
+      "type": "array"
+    }
+  },
+  "required": [
+    "headers",
+    "rows"
+  ],
+  "title": "TableBeatParams",
   "type": "object"
 }
 
