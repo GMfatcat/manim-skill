@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 from typing import Callable
 
 from manim import (
@@ -43,15 +44,26 @@ _SAFE_NAMES: dict = {
     "max": max,
     "round": round,
 }
-for _name in (
+_MATH_FUNCS = (
     "sin", "cos", "tan", "asin", "acos", "atan", "atan2",
     "sinh", "cosh", "tanh",
     "exp", "log", "log2", "log10", "sqrt",
     "pi", "e", "tau", "inf",
     "floor", "ceil", "trunc",
-):
+)
+for _name in _MATH_FUNCS:
     if hasattr(math, _name):
         _SAFE_NAMES[_name] = getattr(math, _name)
+
+# LLMs reliably write `np.cos(x)` and `math.cos(x)` instead of bare `cos(x)`.
+# Expose both prefixes as SimpleNamespace shims pointing at the same picklable
+# math functions — avoids the cyfunction-not-picklable trap that pulling in
+# the real numpy module would re-introduce.
+_PREFIX_SHIM = SimpleNamespace(
+    **{n: getattr(math, n) for n in _MATH_FUNCS if hasattr(math, n)}
+)
+_SAFE_NAMES["np"] = _PREFIX_SHIM
+_SAFE_NAMES["math"] = _PREFIX_SHIM
 
 
 def _compile_expression(expr: str) -> Callable[[float], float]:

@@ -84,17 +84,22 @@ class TableBeat(Component):
         self, scene: Scene, mobject: Mobject, params: TableBeatParams
     ) -> None:
         scene.play(Create(mobject))
-        # If the caller asked for cell highlights, flash them with Indicate.
-        # Table uses 1-indexed cell access internally; offset our 0-indexed
-        # input by 1 for both row and column.
+        # manim Table.get_cell((row, col)) is 1-indexed and counts label
+        # rows/cols as cells. col_labels are always present here (we pass
+        # headers), so data row 0 lives at cell row 2. row_labels shift
+        # the column index when present.
         table = mobject.submobjects[0]
+        row_offset = 2  # col_labels always present
+        col_offset = 2 if params.row_labels else 1
         for r, c in params.highlight_cells:
             try:
-                cell = table.get_cell((r + 1, c + 1), color=YELLOW)
+                cell = table.get_cell(
+                    (r + row_offset, c + col_offset), color=YELLOW
+                )
                 scene.play(FadeIn(cell), run_time=0.4)
                 scene.play(Indicate(cell), run_time=0.6)
             except Exception:
-                # Defensive: manim Table cell-coordinate API can shift
-                # by a row/col when row_labels/col_labels are present.
-                # Skip silently rather than tank the whole beat.
+                # Defensive: cell-coordinate API can still occasionally
+                # disagree with our offset math. Skip rather than tank
+                # the whole beat.
                 continue

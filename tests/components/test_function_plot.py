@@ -45,6 +45,35 @@ def test_supports_curated_math_function_names():
     assert isinstance(mobj, Mobject)
 
 
+def test_supports_np_prefix_for_common_idioms():
+    # Real LLMs reliably write np.cos / np.tanh / np.exp. Expose those
+    # via a SimpleNamespace shim so the LLM's natural style works,
+    # without dragging the real numpy module (and its cyfunctions) into
+    # the closure.
+    comp = FunctionPlot()
+    for expr in ("np.cos(x)", "np.tanh(x)", "np.exp(-x**2)"):
+        mobj = comp.build(
+            FunctionPlotParams(
+                expression=expr,
+                x_range=[-2, 2, 0.5],
+                y_range=[-1, 1, 0.5],
+            )
+        )
+        assert isinstance(mobj, Mobject)
+
+
+def test_supports_math_prefix():
+    comp = FunctionPlot()
+    mobj = comp.build(
+        FunctionPlotParams(
+            expression="math.sqrt(abs(x))",
+            x_range=[-4, 4, 1],
+            y_range=[0, 2, 0.5],
+        )
+    )
+    assert isinstance(mobj, Mobject)
+
+
 def test_title_and_axis_labels_added():
     comp = FunctionPlot()
     bare = comp.build(
