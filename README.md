@@ -89,7 +89,7 @@ A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beat
 
 ## Components
 
-The library ships 14 core components plus a text helper. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
+The library ships 15 components. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
 
 | Component | For |
 |-----------|-----|

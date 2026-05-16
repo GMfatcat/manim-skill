@@ -89,7 +89,7 @@ print(batch.zip_path)
 
 ## 元件
 
-元件庫內含 14 個核心元件加一個文字輔助元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
+元件庫內含 15 個元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
 
 | 元件 | 用途 |
 |------|------|
