@@ -97,6 +97,144 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "type": "object"
 }
 
+### FormulaWalkthrough
+{
+  "$defs": {
+    "FormulaStep": {
+      "properties": {
+        "indices": {
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Indices",
+          "type": "array"
+        },
+        "caption": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Caption"
+        }
+      },
+      "required": [
+        "indices"
+      ],
+      "title": "FormulaStep",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "segments": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Segments",
+      "type": "array"
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/FormulaStep"
+      },
+      "title": "Steps",
+      "type": "array"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "segments"
+  ],
+  "title": "FormulaWalkthroughParams",
+  "type": "object"
+}
+
+### FunctionPlot
+{
+  "properties": {
+    "expression": {
+      "title": "Expression",
+      "type": "string"
+    },
+    "x_range": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 2,
+      "title": "X Range",
+      "type": "array"
+    },
+    "y_range": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 2,
+      "title": "Y Range",
+      "type": "array"
+    },
+    "x_label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "X Label"
+    },
+    "y_label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Y Label"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "expression"
+  ],
+  "title": "FunctionPlotParams",
+  "type": "object"
+}
+
 ### GeometryAnim
 {
   "properties": {
@@ -135,6 +273,64 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
     }
   },
   "title": "GeometryAnimParams",
+  "type": "object"
+}
+
+### HeatmapBeat
+{
+  "properties": {
+    "values": {
+      "items": {
+        "items": {
+          "type": "number"
+        },
+        "type": "array"
+      },
+      "minItems": 1,
+      "title": "Values",
+      "type": "array"
+    },
+    "row_labels": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Row Labels",
+      "type": "array"
+    },
+    "col_labels": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Col Labels",
+      "type": "array"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "low_color": {
+      "default": "BLUE",
+      "title": "Low Color",
+      "type": "string"
+    },
+    "high_color": {
+      "default": "RED",
+      "title": "High Color",
+      "type": "string"
+    }
+  },
+  "required": [
+    "values"
+  ],
+  "title": "HeatmapBeatParams",
   "type": "object"
 }
 

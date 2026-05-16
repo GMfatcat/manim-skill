@@ -1,0 +1,54 @@
+{
+  "title": "三個新 component 視覺驗收",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "HeatmapBeat",
+      "params": {
+        "values": [
+          [0.9, 0.1, 0.0, 0.0],
+          [0.2, 0.7, 0.1, 0.0],
+          [0.0, 0.2, 0.6, 0.2],
+          [0.0, 0.0, 0.3, 0.7]
+        ],
+        "row_labels": ["q1", "q2", "q3", "q4"],
+        "col_labels": ["k1", "k2", "k3", "k4"],
+        "title": "Attention scores per head"
+      },
+      "duration": 3.0,
+      "caption": "色彩越紅越接近 1,越藍越接近 0"
+    },
+    {
+      "component": "FunctionPlot",
+      "params": {
+        "expression": "1 / (1 + exp(-x))",
+        "x_range": [-6, 6, 1],
+        "y_range": [0, 1, 0.25],
+        "x_label": "z",
+        "y_label": "σ(z)",
+        "title": "Sigmoid activation"
+      },
+      "duration": 3.0
+    },
+    {
+      "component": "FormulaWalkthrough",
+      "params": {
+        "segments": [
+          "\\text{Attention}(Q, K, V) = ",
+          "\\text{softmax}",
+          "\\!\\left(",
+          "\\frac{Q K^{\\top}}{\\sqrt{d_k}}",
+          "\\right) ",
+          "V"
+        ],
+        "title": "Scaled dot-product attention",
+        "steps": [
+          {"indices": [3], "caption": "scores: dot product / sqrt(d_k)"},
+          {"indices": [1, 2, 3, 4], "caption": "softmax over keys"},
+          {"indices": [5], "caption": "weighted sum of values"}
+        ]
+      },
+      "duration": 1.0
+    }
+  ]
+}
