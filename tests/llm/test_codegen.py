@@ -55,6 +55,26 @@ def test_generate_spec_passes_catalog_into_system_prompt():
     assert "UNIQUE_CATALOG_MARKER" in system
 
 
+def test_codegen_system_prompt_includes_latex_backslash_guard():
+    """Lock in the LaTeX backslash escape guidance.
+
+    Real-LLM eval surfaced a sibling failure to the raw-beat newline case:
+    the model over-applies its JSON escape rule to LaTeX commands too,
+    writing \\\\\\\\frac in JSON instead of \\\\frac. The decoded string is
+    \\\\frac (two backslashes) which LaTeX rejects and the formula beat
+    silently fails to render.
+    """
+    client = FakeLLMClient(response=_VALID_SPEC)
+    generate_spec(client, _CONCEPT, catalog="(catalog)")
+    system = client.calls[0][0]
+
+    # Prompt must explicitly discuss LaTeX / formula strings
+    s = system.lower()
+    assert "latex" in s or "formula" in s
+    # And must show \\frac as the correct JSON encoding of \frac
+    assert "\\\\frac" in system
+
+
 def test_codegen_system_prompt_includes_raw_beat_guards():
     """Lock in the raw-beat guidance the prompt must carry.
 

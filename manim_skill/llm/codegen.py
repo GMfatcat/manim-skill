@@ -46,6 +46,19 @@ a real newline, not a literal backslash-n):
  "caption": "intro circle",
  "duration": 3.0}
 
+LATEX RULES — for `formula` strings in FormulaBreakdown and any other
+LaTeX-bearing param. The same over-escape mistake hits LaTeX backslashes:
+- LaTeX commands use ONE backslash: \\frac, \\sqrt, \\sum, \\alpha.
+- In the JSON output, escape that single backslash exactly once as \\\\.
+  The JSON decoder collapses \\\\ back to \\, so the decoded string is
+  the original LaTeX command.
+- DO NOT write \\\\\\\\frac — that decodes to \\\\frac (two backslashes),
+  which is not a valid LaTeX command and the formula beat will fail to
+  compile and render as an empty frame.
+
+Correct:  "formula": "\\\\frac{Q K^T}{\\\\sqrt{d_k}}"
+Wrong:    "formula": "\\\\\\\\frac{Q K^T}{\\\\\\\\sqrt{d_k}}"
+
 Output ONLY the JSON object, nothing else.
 
 COMPONENT CATALOG:
