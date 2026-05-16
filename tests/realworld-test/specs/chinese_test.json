@@ -1,0 +1,47 @@
+{
+  "title": "中文字渲染測試",
+  "aspect_ratio": "16:9",
+  "beats": [
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "中文字渲染測試",
+        "subtitle": "繁體中文 / 簡體中文 / 標點符號",
+        "style": "title"
+      },
+      "duration": 2.5
+    },
+    {
+      "component": "TextBeat",
+      "params": {
+        "text": "重點摘要",
+        "style": "bullets",
+        "bullets": [
+          "繁體中文:深度學習、注意力機制、擴散模型",
+          "簡體中文:深度学习、注意力机制、扩散模型",
+          "中英混合:Transformer 架構 + Self-Attention",
+          "標點符號:「引號」、《書名》、〈篇章〉"
+        ]
+      },
+      "duration": 5.0,
+      "caption": "三種常見的中文使用情境"
+    },
+    {
+      "component": "PipelineDiagram",
+      "params": {
+        "stages": ["輸入", "編碼", "注意力", "解碼", "輸出"],
+        "title": "Transformer 流程"
+      },
+      "duration": 4.0,
+      "caption": "中文標籤 + 中文標題"
+    },
+    {
+      "component": "FormulaBreakdown",
+      "params": {
+        "formula": "\\text{注意力}(Q, K, V) = \\text{softmax}\\!\\left(\\frac{Q K^{\\top}}{\\sqrt{d_k}}\\right) V",
+        "title": "注意力公式(LaTeX 內含中文)"
+      },
+      "duration": 4.5
+    }
+  ]
+}

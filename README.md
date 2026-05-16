@@ -105,6 +105,8 @@ The library ships 8 core components plus a text helper. Each declares a Pydantic
 
 Adding a component is a single file in `manim_skill/components/` — it is auto-discovered, and the catalog and skill docs update automatically.
 
+CJK note: the docker image bundles Noto CJK, so plain-text components (TextBeat, PipelineDiagram labels, captions, anything that flows through manim's Pango `Text()`) render Chinese / Japanese / Korean. LaTeX (`FormulaBreakdown.formula`, raw `Tex` / `MathTex`) is English-only — keep formulas pure math and put localized text in the title and caption fields.
+
 ## Architecture
 
 Strictly one-directional layers:
