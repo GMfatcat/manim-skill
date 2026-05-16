@@ -30,3 +30,43 @@ def test_exec_raw_propagates_errors():
     scene = FakeScene()
     with pytest.raises(ZeroDivisionError):
         exec_raw("x = 1 / 0", scene)
+
+
+def test_exec_raw_recovers_double_escaped_newlines():
+    """Some LLMs over-escape newlines in the JSON `code` field: real
+    newlines that should be \\n in JSON come out as \\\\n, decoding to a
+    literal backslash+n in Python source. That's a SyntaxError. If
+    compile fails and the code contains a literal backslash+n, retry
+    after converting them to real newlines."""
+    scene = FakeScene()
+    # Two statements joined by a literal backslash+n — would normally
+    # be a SyntaxError. The defensive fix replaces it with a real
+    # newline so both statements execute.
+    code = "self.wait(1)\\nself.wait(2)"
+    exec_raw(code, scene)
+    assert ("wait", (1,), {}) in scene.calls
+    assert ("wait", (2,), {}) in scene.calls
+
+
+def test_exec_raw_preserves_backslash_n_inside_string_literal():
+    """A legitimate \\n inside a Python string literal (which compiles
+    fine on the first try) must not be touched by the recovery path."""
+    scene = FakeScene()
+    captured = {}
+
+    def fake_log(msg):
+        captured["msg"] = msg
+
+    scene.log = fake_log
+    # \\n inside a Python string is an escape sequence meaning newline.
+    # The source compiles cleanly; the recovery heuristic must not run.
+    exec_raw('self.log("a\\nb")', scene)
+    assert captured["msg"] == "a\nb"  # real newline, not backslash+n
+
+
+def test_exec_raw_still_raises_when_recovery_does_not_help():
+    """If the code has neither literal \\n nor any other recoverable
+    pattern, an original SyntaxError still propagates."""
+    scene = FakeScene()
+    with pytest.raises(SyntaxError):
+        exec_raw("def(", scene)
