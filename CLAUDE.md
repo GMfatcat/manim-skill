@@ -63,3 +63,9 @@ The whole system ships as **one universal `manim-skill:latest` image** (manim + 
 - LLM output is never trusted: always `parse_spec_text` (lenient) → `validate_spec` before use.
 - `subprocess.run` calls that invoke docker pass `encoding="utf-8", errors="replace"` (the dev machine's console codepage is cp950).
 - The design specs and the nine implementation plans (Phase 1 = plans 1–5, Phase 2 = plans 6–9) live in `docs/superpowers/`.
+
+## Live LLM eval
+
+The fast suite is all fakes. For real evidence against a real LLM there is `scripts/eval/`: `probe_openrouter.py` (list/hello any OpenAI-compatible model), `run_smoke.py` (run `analyze`/`codegen`/full pipeline stages, plus `regen` to re-codegen specific concept indices from a cached `concepts.json` without re-paying for analyze), and `render_specs.py` (batch-render whatever specs sit under a directory). The OpenRouter key is read from `OpenRouterKey` env var or, as fallback, a gitignored `tests/realworld-test/key.txt`. Source materials and the saved smoke outputs live under `tests/realworld-test/`.
+
+The current `_CODEGEN_SYSTEM` prompt in `manim_skill/llm/codegen.py` is **shaped by this eval** — five raw-beat failure modes (Scene-class wrappers, missing `self.play`/`add`, double-escaped `\n` in JSON, cross-beat variable references) and the sibling LaTeX-backslash mistake were observed against `nvidia/nemotron-3-super-120b-a12b:free` and turned into explicit DO/DO NOT rules. Two tests in `tests/llm/test_codegen.py` (`test_codegen_system_prompt_includes_raw_beat_guards`, `test_codegen_system_prompt_includes_latex_backslash_guard`) assert the rules stay in the prompt — they are guards on prompt content, not on model behavior. If you change the prompt, run the live eval again before assuming the change is safe.
