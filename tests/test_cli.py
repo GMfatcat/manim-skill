@@ -55,7 +55,7 @@ def test_catalog_command_prints_components(capsys):
 def test_render_command_success(tmp_path, capsys, monkeypatch):
     from manim_skill.render.jobs import BatchJob, ClipJob, JobStatus
 
-    def fake_render_batch(specs, workdir):
+    def fake_render_batch(specs, workdir, *, quality="medium"):
         clip = ClipJob(
             concept=specs[0].title,
             spec=specs[0],
@@ -82,7 +82,7 @@ def test_render_command_success(tmp_path, capsys, monkeypatch):
 def test_render_command_reports_render_failure(tmp_path, capsys, monkeypatch):
     from manim_skill.render.jobs import BatchJob, ClipJob, JobStatus
 
-    def fake_render_batch(specs, workdir):
+    def fake_render_batch(specs, workdir, *, quality="medium"):
         clip = ClipJob(
             concept=specs[0].title,
             spec=specs[0],
@@ -96,6 +96,66 @@ def test_render_command_reports_render_failure(tmp_path, capsys, monkeypatch):
     rc = main(["render", spec_path, "--workdir", str(tmp_path / "wd")])
     assert rc == 1
     assert "RENDER FAILED" in capsys.readouterr().err
+
+
+def test_render_command_passes_quality_flag(tmp_path, capsys, monkeypatch):
+    from manim_skill.render.jobs import BatchJob, ClipJob, JobStatus
+
+    captured = {}
+
+    def fake_render_batch(specs, workdir, *, quality="medium"):
+        captured["quality"] = quality
+        clip = ClipJob(
+            concept=specs[0].title,
+            spec=specs[0],
+            status=JobStatus.DONE,
+            mp4_path=Path("out/clip.mp4"),
+            gif_path=Path("out/clip.gif"),
+        )
+        return BatchJob(
+            clip_jobs=[clip],
+            status=JobStatus.DONE,
+            zip_path=Path("out/output.zip"),
+        )
+
+    monkeypatch.setattr(cli_mod, "render_batch", fake_render_batch)
+    spec_path = _write_spec(tmp_path, _VALID_SPEC)
+    rc = main([
+        "render", spec_path,
+        "--quality", "high",
+        "--workdir", str(tmp_path / "wd"),
+    ])
+    assert rc == 0
+    assert captured["quality"] == "high"
+
+
+def test_render_command_quality_defaults_to_medium(
+    tmp_path, capsys, monkeypatch
+):
+    from manim_skill.render.jobs import BatchJob, ClipJob, JobStatus
+
+    captured = {}
+
+    def fake_render_batch(specs, workdir, *, quality="medium"):
+        captured["quality"] = quality
+        clip = ClipJob(
+            concept=specs[0].title,
+            spec=specs[0],
+            status=JobStatus.DONE,
+            mp4_path=Path("out/c.mp4"),
+            gif_path=Path("out/c.gif"),
+        )
+        return BatchJob(
+            clip_jobs=[clip],
+            status=JobStatus.DONE,
+            zip_path=Path("out/o.zip"),
+        )
+
+    monkeypatch.setattr(cli_mod, "render_batch", fake_render_batch)
+    spec_path = _write_spec(tmp_path, _VALID_SPEC)
+    rc = main(["render", spec_path, "--workdir", str(tmp_path / "wd")])
+    assert rc == 0
+    assert captured["quality"] == "medium"
 
 
 def test_render_command_rejects_bad_spec(tmp_path, capsys):

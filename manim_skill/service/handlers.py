@@ -85,6 +85,7 @@ def handle_render_job(job_id: str, mode: str, payload) -> None:
             job_workdir,
             max_workers=config.render_concurrency,
             repairer=BeatRepairer(client),
+            quality=config.render_quality,
         )
         if batch.zip_path is None:
             raise RuntimeError("render produced no output")

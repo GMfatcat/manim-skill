@@ -1,7 +1,65 @@
+import subprocess
+from types import SimpleNamespace
+
 import pytest
 
+from manim_skill.render import docker_render as docker_render_mod
 from manim_skill.render.docker_render import RenderError, render_spec_to_mp4
 from manim_skill.spec.schema import Beat, SceneSpec
+
+
+_TRIVIAL_SPEC = SceneSpec(
+    title="T",
+    beats=[Beat(component="TextBeat", params={"text": "x"}, duration=0.5)],
+)
+
+
+def _fake_cmd_capture(monkeypatch, tmp_path):
+    """Patch subprocess.run + _find_output_mp4 so render_spec_to_mp4 runs
+    without docker. Return a list that will hold the captured docker cmd."""
+    captured: list[list[str]] = []
+    fake_mp4 = tmp_path / "_fake_out.mp4"
+    fake_mp4.write_bytes(b"fake")
+
+    def fake_run(cmd, **kwargs):
+        captured.append(list(cmd))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(docker_render_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        docker_render_mod, "_find_output_mp4", lambda _: fake_mp4
+    )
+    return captured
+
+
+def test_render_quality_defaults_to_medium(tmp_path, monkeypatch):
+    captured = _fake_cmd_capture(monkeypatch, tmp_path)
+    render_spec_to_mp4(_TRIVIAL_SPEC, tmp_path)
+    assert "-qm" in captured[0]
+
+
+@pytest.mark.parametrize(
+    "quality, expected_flag",
+    [
+        ("low", "-ql"),
+        ("medium", "-qm"),
+        ("high", "-qh"),
+        ("production", "-qp"),
+        ("fourk", "-qk"),
+    ],
+)
+def test_render_quality_maps_to_manim_flag(
+    quality, expected_flag, tmp_path, monkeypatch
+):
+    captured = _fake_cmd_capture(monkeypatch, tmp_path)
+    render_spec_to_mp4(_TRIVIAL_SPEC, tmp_path, quality=quality)
+    assert expected_flag in captured[0]
+
+
+def test_render_quality_unknown_raises(tmp_path, monkeypatch):
+    _fake_cmd_capture(monkeypatch, tmp_path)
+    with pytest.raises(ValueError, match="quality"):
+        render_spec_to_mp4(_TRIVIAL_SPEC, tmp_path, quality="ultra")
 
 
 @pytest.mark.docker

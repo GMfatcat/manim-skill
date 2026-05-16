@@ -47,6 +47,7 @@ def run_pipeline(
     max_workers: int = 3,
     cache: BeatCache | None = None,
     repair: bool = True,
+    quality: str = "medium",
 ) -> BatchJob:
     """Full Phase-1 web-path pipeline (minus the human checkpoint):
     input -> analyze -> codegen -> render_batch -> zip bundle.
@@ -61,4 +62,5 @@ def run_pipeline(
         max_workers=max_workers,
         cache=cache,
         repairer=repairer,
+        quality=quality,
     )

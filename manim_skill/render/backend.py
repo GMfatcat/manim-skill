@@ -25,6 +25,7 @@ def _render_beat_job(
     clip_dir: Path,
     cache: BeatCache | None,
     repairer: "BeatRepairer | None",
+    quality: str,
 ) -> BeatJob:
     """Render one beat as a standalone 1-beat spec.
 
@@ -57,6 +58,7 @@ def _render_beat_job(
                 beat_work,
                 title=clip.spec.title,
                 aspect_ratio=clip.spec.aspect_ratio,
+                quality=quality,
             )
             rendered = result.mp4_path
             beat_job.beat = result.final_beat
@@ -66,7 +68,9 @@ def _render_beat_job(
                 aspect_ratio=clip.spec.aspect_ratio,
                 beats=[original_beat],
             )
-            rendered = render_spec_to_mp4(one_beat_spec, beat_work)
+            rendered = render_spec_to_mp4(
+                one_beat_spec, beat_work, quality=quality
+            )
 
         shutil.copy2(rendered, dest)
         beat_job.mp4_path = dest
@@ -87,6 +91,7 @@ def render_batch(
     max_workers: int = 3,
     cache: BeatCache | None = None,
     repairer: "BeatRepairer | None" = None,
+    quality: str = "medium",
 ) -> BatchJob:
     """Render a batch of scene specs into one zip bundle.
 
@@ -122,6 +127,7 @@ def render_batch(
             clip_dir=clip_dir,
             cache=cache,
             repairer=repairer,
+            quality=quality,
         )
         queue.run_all(worker, list(enumerate(clip.beat_jobs)))
 

@@ -9,6 +9,7 @@ def test_load_config_defaults(monkeypatch):
         "MANIM_SKILL_LLM_MODEL", "MANIM_SKILL_LLM_CONCURRENCY",
         "MANIM_SKILL_RENDER_CONCURRENCY", "MANIM_SKILL_WORK_DIR",
         "MANIM_SKILL_JOB_TTL", "MANIM_SKILL_WEB_QUOTA",
+        "MANIM_SKILL_RENDER_QUALITY",
     ]:
         monkeypatch.delenv(var, raising=False)
     config = load_config()
@@ -18,7 +19,14 @@ def test_load_config_defaults(monkeypatch):
     assert config.render_concurrency == 3
     assert config.job_ttl_seconds == 3600
     assert config.web_quota == 5
+    assert config.render_quality == "medium"
     assert isinstance(config.work_dir, Path)
+
+
+def test_load_config_reads_render_quality(monkeypatch):
+    monkeypatch.setenv("MANIM_SKILL_RENDER_QUALITY", "high")
+    config = load_config()
+    assert config.render_quality == "high"
 
 
 def test_load_config_reads_env(monkeypatch):

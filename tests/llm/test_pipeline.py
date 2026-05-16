@@ -42,7 +42,7 @@ def test_run_pipeline_passes_specs_and_repairer_to_render_batch(
 ):
     captured = {}
 
-    def fake_render_batch(specs, workdir, *, max_workers, cache, repairer):
+    def fake_render_batch(specs, workdir, *, max_workers, cache, repairer, quality):
         from manim_skill.render.jobs import BatchJob, JobStatus
 
         captured["specs"] = specs
@@ -57,7 +57,7 @@ def test_run_pipeline_passes_specs_and_repairer_to_render_batch(
 
 
 def test_run_pipeline_repair_false_passes_no_repairer(tmp_path, monkeypatch):
-    def fake_render_batch(specs, workdir, *, max_workers, cache, repairer):
+    def fake_render_batch(specs, workdir, *, max_workers, cache, repairer, quality):
         from manim_skill.render.jobs import BatchJob, JobStatus
 
         assert repairer is None
@@ -66,3 +66,18 @@ def test_run_pipeline_repair_false_passes_no_repairer(tmp_path, monkeypatch):
     monkeypatch.setattr(pipeline_mod, "render_batch", fake_render_batch)
     client = FakeLLMClient(responses=[_ANALYZE_RESP, _SPEC_RESP])
     run_pipeline(client, "text", "text", tmp_path, repair=False)
+
+
+def test_run_pipeline_propagates_quality(tmp_path, monkeypatch):
+    captured = {}
+
+    def fake_render_batch(specs, workdir, *, max_workers, cache, repairer, quality):
+        from manim_skill.render.jobs import BatchJob, JobStatus
+
+        captured["quality"] = quality
+        return BatchJob(clip_jobs=[], status=JobStatus.DONE)
+
+    monkeypatch.setattr(pipeline_mod, "render_batch", fake_render_batch)
+    client = FakeLLMClient(responses=[_ANALYZE_RESP, _SPEC_RESP])
+    run_pipeline(client, "text", "text", tmp_path, quality="high")
+    assert captured["quality"] == "high"

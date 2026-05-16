@@ -7,7 +7,7 @@ from manim_skill.render.jobs import JobStatus
 from manim_skill.spec.schema import Beat, SceneSpec
 
 
-def _fake_render_spec_to_mp4(spec, workdir):
+def _fake_render_spec_to_mp4(spec, workdir, *, quality="medium"):
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
     mp4 = workdir / "fake.mp4"
@@ -15,7 +15,7 @@ def _fake_render_spec_to_mp4(spec, workdir):
     return mp4
 
 
-def _fake_render_raises(spec, workdir):
+def _fake_render_raises(spec, workdir, *, quality="medium"):
     raise RenderError("simulated render failure")
 
 
@@ -66,7 +66,7 @@ def test_render_batch_happy_path(tmp_path, monkeypatch):
 def test_render_batch_failed_beat_is_skipped(tmp_path, monkeypatch):
     calls = {"n": 0}
 
-    def flaky_render(spec, workdir):
+    def flaky_render(spec, workdir, *, quality="medium"):
         calls["n"] += 1
         if calls["n"] == 1:
             raise RenderError("boom")
@@ -129,6 +129,23 @@ def test_render_batch_uses_cache_to_skip_rendering(tmp_path, monkeypatch):
     assert batch2.clip_jobs[0].beat_jobs[0].status == JobStatus.DONE
 
 
+def test_render_batch_propagates_quality_to_renderer(tmp_path, monkeypatch):
+    captured: list[str] = []
+
+    def recording_render(spec, workdir, *, quality="medium"):
+        captured.append(quality)
+        return _fake_render_spec_to_mp4(spec, workdir)
+
+    monkeypatch.setattr(backend_mod, "render_spec_to_mp4", recording_render)
+    monkeypatch.setattr(backend_mod, "stitch_mp4s", _fake_stitch_mp4s)
+    monkeypatch.setattr(backend_mod, "mp4_to_gif", _fake_mp4_to_gif)
+
+    specs = [SceneSpec(title="C", beats=[Beat(component="raw", code="self.wait(1)")])]
+    render_batch(specs, tmp_path, quality="high")
+
+    assert captured == ["high"]
+
+
 def test_render_batch_repairer_recovers_failed_raw_beat(tmp_path, monkeypatch):
     # render_spec_to_mp4 always fails; the repairer "fixes" the beat and
     # produces an mp4, so the clip still completes.
@@ -137,7 +154,9 @@ def test_render_batch_repairer_recovers_failed_raw_beat(tmp_path, monkeypatch):
     monkeypatch.setattr(backend_mod, "mp4_to_gif", _fake_mp4_to_gif)
 
     class _FakeRepairer:
-        def render_with_repair(self, beat, work_dir, *, title, aspect_ratio):
+        def render_with_repair(
+            self, beat, work_dir, *, title, aspect_ratio, quality="medium"
+        ):
             from manim_skill.llm.repair import RepairResult
 
             work_dir = Path(work_dir)

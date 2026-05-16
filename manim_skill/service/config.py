@@ -15,6 +15,7 @@ class ServiceConfig:
     work_dir: Path
     job_ttl_seconds: int
     web_quota: int
+    render_quality: str = "medium"
 
 
 def load_config() -> ServiceConfig:
@@ -34,4 +35,5 @@ def load_config() -> ServiceConfig:
         work_dir=Path(env.get("MANIM_SKILL_WORK_DIR", "service_work")),
         job_ttl_seconds=int(env.get("MANIM_SKILL_JOB_TTL", "3600")),
         web_quota=int(env.get("MANIM_SKILL_WEB_QUOTA", "5")),
+        render_quality=env.get("MANIM_SKILL_RENDER_QUALITY", "medium"),
     )

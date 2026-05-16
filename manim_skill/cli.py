@@ -52,7 +52,7 @@ def _cmd_render(args) -> int:
     except SpecValidationError as exc:
         print(f"INVALID: {exc}", file=sys.stderr)
         return 1
-    batch = render_batch([spec], Path(args.workdir))
+    batch = render_batch([spec], Path(args.workdir), quality=args.quality)
     clip = batch.clip_jobs[0]
     if clip.status == JobStatus.DONE:
         print(f"mp4: {clip.mp4_path}")
@@ -124,6 +124,17 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "backend URL for remote rendering (or set "
             "MANIM_SKILL_BACKEND); if unset, renders locally in-process"
+        ),
+    )
+    p_render.add_argument(
+        "--quality",
+        choices=["low", "medium", "high", "production", "fourk"],
+        default="medium",
+        help=(
+            "render quality (default: medium = 720p30). "
+            "low=480p15, medium=720p30, high=1080p60, "
+            "production=1440p60, fourk=2160p60. "
+            "Ignored when using --remote (the backend picks)."
         ),
     )
     p_render.set_defaults(func=_cmd_render)

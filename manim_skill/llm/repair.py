@@ -44,6 +44,7 @@ class BeatRepairer:
         *,
         title: str = "clip",
         aspect_ratio: str = "16:9",
+        quality: str = "medium",
     ) -> RepairResult:
         """Render `beat` as a 1-beat spec, repairing raw code on failure.
 
@@ -60,7 +61,7 @@ class BeatRepairer:
             )
             try:
                 mp4 = render_spec_to_mp4(
-                    spec, work_dir / f"attempt_{attempt}"
+                    spec, work_dir / f"attempt_{attempt}", quality=quality
                 )
                 return RepairResult(
                     mp4_path=mp4, final_beat=current, attempts=attempt

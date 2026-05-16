@@ -20,7 +20,7 @@ def _fake_mp4(workdir):
 def test_repair_succeeds_on_first_attempt(tmp_path, monkeypatch):
     monkeypatch.setattr(
         repair_mod, "render_spec_to_mp4",
-        lambda spec, workdir: _fake_mp4(workdir),
+        lambda spec, workdir, *, quality="medium": _fake_mp4(workdir),
     )
     client = FakeLLMClient(response="should not be called")
     repairer = BeatRepairer(client)
@@ -35,7 +35,7 @@ def test_repair_succeeds_on_first_attempt(tmp_path, monkeypatch):
 def test_repair_fixes_code_then_succeeds(tmp_path, monkeypatch):
     calls = {"n": 0}
 
-    def flaky(spec, workdir):
+    def flaky(spec, workdir, *, quality="medium"):
         calls["n"] += 1
         if calls["n"] == 1:
             raise RenderError("NameError: bad")
@@ -52,7 +52,7 @@ def test_repair_fixes_code_then_succeeds(tmp_path, monkeypatch):
 
 
 def test_repair_gives_up_after_max_attempts(tmp_path, monkeypatch):
-    def always_fails(spec, workdir):
+    def always_fails(spec, workdir, *, quality="medium"):
         raise RenderError("always broken")
 
     monkeypatch.setattr(repair_mod, "render_spec_to_mp4", always_fails)
@@ -66,7 +66,7 @@ def test_repair_gives_up_after_max_attempts(tmp_path, monkeypatch):
 
 
 def test_repair_does_not_retry_non_raw_beat(tmp_path, monkeypatch):
-    def always_fails(spec, workdir):
+    def always_fails(spec, workdir, *, quality="medium"):
         raise RenderError("component bug")
 
     monkeypatch.setattr(repair_mod, "render_spec_to_mp4", always_fails)
