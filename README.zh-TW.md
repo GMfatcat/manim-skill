@@ -105,6 +105,8 @@ print(batch.zip_path)
 
 新增一個元件只需要在 `manim_skill/components/` 放一個檔案——會被自動探索，目錄與 skill 文件也會自動更新。
 
+中文渲染：docker image 已內建 Noto CJK，所有走 manim Pango `Text()` 的路徑（TextBeat、PipelineDiagram label、caption 等）都能正確渲染繁體 / 簡體中文 / 日韓字。LaTeX 路徑（`FormulaBreakdown.formula`、raw `Tex` / `MathTex`）目前**只支援英文**——公式內請保持純數學，中文放到 title / caption 即可。
+
 ## 架構
 
 嚴格的單向分層：
