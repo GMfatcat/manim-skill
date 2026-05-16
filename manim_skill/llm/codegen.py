@@ -21,8 +21,32 @@ Schema:
             "caption": "...", "duration": 4.0}]}
 Prefer the components in the catalog below; each beat's "params" must match
 that component's params schema. If no component fits a beat, use
-"component": "raw" with a "code" field containing manim Python (the scene is
-`self`). Output ONLY the JSON object, nothing else.
+"component": "raw" with a non-empty "code" field.
+
+RAW BEAT RULES — common mistakes the codegen LLM tends to make:
+- The code runs INSIDE an existing scene's construct method. `self` is the
+  scene. All public manim names (Circle, Text, FadeIn, VGroup, Create,
+  Transform, Arrow, Line, Square, Rectangle, etc.) are pre-imported.
+- DO NOT define a `class XxxScene(Scene):` or a `def construct(self):` — the
+  scene already exists; write only the body, top-level statements.
+- The code MUST contain at least one `self.play(...)` or `self.add(...)`.
+  A beat that only computes/prints produces an empty frame and is wasted.
+- Each beat runs in its own isolated process. You CANNOT reference variables
+  defined in another beat. Define every name within the same beat's code.
+- In the JSON output, encode newlines inside the `code` string as a single
+  \\n (JSON's newline escape). Do NOT write \\\\n — that decodes to a literal
+  backslash-n and Python parses it as a syntax error.
+- If you need numpy or math, write `import numpy as np` / `import math` at
+  the top of the same beat's code.
+
+EXAMPLE of a correct raw beat (note the \\n in `code` is the JSON escape for
+a real newline, not a literal backslash-n):
+{"component": "raw",
+ "code": "c = Circle(color=BLUE)\\nlabel = Text('hi').next_to(c, DOWN)\\nself.play(Create(c), FadeIn(label))\\nself.wait(1)",
+ "caption": "intro circle",
+ "duration": 3.0}
+
+Output ONLY the JSON object, nothing else.
 
 COMPONENT CATALOG:
 __CATALOG__"""

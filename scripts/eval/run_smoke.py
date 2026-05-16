@@ -147,6 +147,51 @@ def stage_codegen(model: str, input_path: Path, kind: str, workdir: Path) -> Non
     print(f"\n[summary] {len(specs)}/{len(concepts)} specs validated")
 
 
+def stage_regen(model: str, concepts_path: Path, out_dir: Path, indices: list[int]) -> None:
+    """Re-run codegen on a subset of saved concepts.
+
+    Useful after a prompt or client fix: skip the (slow) analyze stage,
+    pull cached concepts.json, and regenerate the specs for the indices
+    that were previously broken.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    client = _make_client(model)
+    raw = json.loads(concepts_path.read_text(encoding="utf-8"))
+    from manim_skill.llm.analyze import ConceptCandidate
+
+    concepts = [ConceptCandidate.model_validate(c) for c in raw]
+    catalog = build_component_catalog()
+
+    print(f"[regen] {len(indices)} concept(s) from {concepts_path}")
+    fails = []
+    for i in indices:
+        if i < 0 or i >= len(concepts):
+            print(f"  [{i}] SKIP (out of range, only {len(concepts)} concepts)")
+            continue
+        concept = concepts[i]
+        t0 = time.perf_counter()
+        try:
+            spec = generate_spec(client, concept, catalog)
+            (out_dir / f"spec_{i:02d}.json").write_text(
+                spec.model_dump_json(indent=2), encoding="utf-8"
+            )
+            print(f"  [{i}] OK   {concept.concept} — {len(spec.beats)} beats ({time.perf_counter() - t0:.1f}s)")
+        except CodegenError as e:
+            fails.append((i, concept.concept, str(e)))
+            print(f"  [{i}] FAIL {concept.concept} — {e}")
+    summary = {
+        "model": model,
+        "concepts_source": str(concepts_path),
+        "indices": indices,
+        "specs_ok": len(indices) - len(fails),
+        "specs_failed": len(fails),
+        "failures": [{"i": i, "title": t, "error": e} for i, t, e in fails],
+    }
+    (out_dir / "regen_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
 def stage_full(model: str, input_path: Path, kind: str, workdir: Path) -> None:
     workdir.mkdir(parents=True, exist_ok=True)
     client = _make_client(model)
@@ -165,15 +210,36 @@ def stage_full(model: str, input_path: Path, kind: str, workdir: Path) -> None:
 
 
 def main() -> None:
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    stage = sys.argv[1]
+
+    if stage == "regen":
+        # regen <model> <concepts.json> <out-dir> <i1,i2,...>
+        if len(sys.argv) != 6:
+            sys.exit(
+                "regen requires: <model> <concepts.json> <out-dir> <i1,i2,...>"
+            )
+        model = sys.argv[2]
+        concepts_path = Path(sys.argv[3])
+        out_dir = Path(sys.argv[4])
+        indices = [int(x) for x in sys.argv[5].split(",") if x.strip()]
+        try:
+            stage_regen(model, concepts_path, out_dir, indices)
+        except Exception:
+            traceback.print_exc()
+            sys.exit(1)
+        return
+
     if len(sys.argv) < 6:
         sys.exit(__doc__)
-    stage, model, input_path, kind, workdir = sys.argv[1:6]
+    model, input_path, kind, workdir = sys.argv[2:6]
     if kind not in ("text", "code", "pdf"):
         sys.exit(f"kind must be text|code|pdf, got {kind!r}")
 
     fn = {"analyze": stage_analyze, "codegen": stage_codegen, "full": stage_full}.get(stage)
     if fn is None:
-        sys.exit(f"stage must be analyze|codegen|full, got {stage!r}")
+        sys.exit(f"stage must be analyze|codegen|full|regen, got {stage!r}")
 
     try:
         fn(model, Path(input_path), kind, Path(workdir))
