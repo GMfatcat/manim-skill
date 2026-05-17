@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
 
 from manim_skill.backend_client import BackendClient, BackendClientError
 
+from manim_skill.llm.analyze import ConceptCandidate, analyze
 from manim_skill.llm.catalog import build_component_catalog
+from manim_skill.llm.client import OpenAIClient
+from manim_skill.llm.codegen import CodegenError, generate_spec
+from manim_skill.llm.input_prep import prepare_input
 from manim_skill.render.backend import render_batch
 from manim_skill.render.jobs import JobStatus
 from manim_skill.skill_docs import generate_skill_docs
@@ -18,6 +23,27 @@ from manim_skill.spec.validate import SpecValidationError, validate_spec
 def _load_spec(spec_path: str):
     text = Path(spec_path).read_text(encoding="utf-8")
     return validate_spec(parse_spec_text(text))
+
+
+def _build_llm_client_from_env() -> OpenAIClient:
+    """Build an OpenAIClient from MANIM_SKILL_LLM_* env vars.
+
+    Defaults match service/config.py so a local Ollama or vLLM works
+    out of the box. The api_key field is optional — local servers
+    typically don't require one, OpenRouter / OpenAI do.
+    """
+    base_url = os.environ.get(
+        "MANIM_SKILL_LLM_BASE_URL", "http://localhost:11434/v1"
+    )
+    model = os.environ.get("MANIM_SKILL_LLM_MODEL", "qwen3.5-35b")
+    api_key = os.environ.get("MANIM_SKILL_LLM_API_KEY", "not-needed")
+    return OpenAIClient(base_url=base_url, model=model, api_key=api_key)
+
+
+def _read_input_for_kind(path: Path, kind: str):
+    if kind == "pdf":
+        return path.read_bytes()
+    return path.read_text(encoding="utf-8")
 
 
 def _cmd_validate(args) -> int:
@@ -88,6 +114,145 @@ def _render_remote(raw_spec: dict, backend_url: str, workdir: str) -> int:
         return 1
 
 
+def _cmd_analyze(args) -> int:
+    """Run the LLM analyze stage and dump concepts.json into workdir."""
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"INVALID: {input_path} not found", file=sys.stderr)
+        return 1
+    workdir = Path(args.workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+
+    content = _read_input_for_kind(input_path, args.kind)
+    prepared = prepare_input(content, args.kind)
+    client = _build_llm_client_from_env()
+    concepts = analyze(client, prepared, guide_prompt=args.guide)
+
+    out = workdir / "concepts.json"
+    out.write_text(
+        json.dumps(
+            [c.model_dump() for c in concepts], indent=2, ensure_ascii=False
+        ),
+        encoding="utf-8",
+    )
+    print(f"analyze: {len(concepts)} concept(s) saved to {out}")
+    for i, c in enumerate(concepts):
+        print(f"  [{i}] {c.concept}")
+    return 0
+
+
+def _cmd_codegen_concepts(args) -> int:
+    """Read workdir/concepts.json and codegen a spec_NN.json per concept."""
+    workdir = Path(args.workdir)
+    concepts_path = workdir / "concepts.json"
+    if not concepts_path.exists():
+        print(
+            f"INVALID: {concepts_path} not found (run `analyze` first)",
+            file=sys.stderr,
+        )
+        return 1
+
+    raw = json.loads(concepts_path.read_text(encoding="utf-8"))
+    concepts = [ConceptCandidate.model_validate(c) for c in raw]
+
+    if args.indices:
+        try:
+            picked = [int(x) for x in args.indices.split(",") if x.strip()]
+        except ValueError:
+            print(f"INVALID: bad --indices {args.indices!r}", file=sys.stderr)
+            return 1
+    else:
+        picked = list(range(len(concepts)))
+
+    catalog = build_component_catalog()
+    client = _build_llm_client_from_env()
+
+    ok = 0
+    failed = 0
+    for i in picked:
+        if i < 0 or i >= len(concepts):
+            print(f"  [{i}] SKIP (out of range)", file=sys.stderr)
+            continue
+        concept = concepts[i]
+        try:
+            spec = generate_spec(client, concept, catalog)
+            (workdir / f"spec_{i:02d}.json").write_text(
+                spec.model_dump_json(indent=2), encoding="utf-8"
+            )
+            print(f"  [{i}] OK  {concept.concept} — {len(spec.beats)} beats")
+            ok += 1
+        except CodegenError as exc:
+            print(f"  [{i}] FAIL {concept.concept} — {exc}")
+            failed += 1
+    print(f"codegen-concepts: {ok} spec(s) saved, {failed} failed")
+    return 0
+
+
+def _cmd_bundle(args) -> int:
+    """Load every spec_*.json under workdir, render as one batch, write zip."""
+    workdir = Path(args.workdir)
+    spec_paths = sorted(workdir.glob("spec_*.json"))
+    if not spec_paths:
+        print(
+            f"INVALID: no spec_*.json files under {workdir}", file=sys.stderr
+        )
+        return 1
+
+    specs = []
+    for p in spec_paths:
+        try:
+            text = p.read_text(encoding="utf-8")
+            specs.append(validate_spec(parse_spec_text(text)))
+        except (SpecParseError, SpecValidationError) as exc:
+            print(f"INVALID: {p.name}: {exc}", file=sys.stderr)
+            return 1
+
+    batch = render_batch(specs, workdir, quality=args.quality)
+    print(f"bundle: {len(specs)} clip(s), status={batch.status.value}")
+    for i, clip in enumerate(batch.clip_jobs):
+        ok_beats = sum(1 for bj in clip.beat_jobs if bj.mp4_path)
+        total = len(clip.beat_jobs)
+        print(
+            f"  [{i}] {clip.spec.title}: {ok_beats}/{total} beats, "
+            f"status={clip.status.value}"
+        )
+    if batch.zip_path:
+        print(f"zip: {batch.zip_path}")
+    return 0
+
+
+def _cmd_demo(args) -> int:
+    """End-to-end: analyze -> (pause for review) -> codegen -> bundle.
+
+    The pause between analyze and codegen lets a human edit
+    workdir/concepts.json (drop / reorder / rewrite concepts) before
+    paying for codegen. Skip the pause with --yes (or when an agent is
+    driving and confirming via its own UI).
+    """
+    rc = _cmd_analyze(args)
+    if rc != 0:
+        return rc
+
+    if not args.yes:
+        concepts_path = Path(args.workdir) / "concepts.json"
+        print(
+            f"\nEdit {concepts_path} now to drop / reorder / rewrite "
+            f"concepts.\nPress ENTER to continue with codegen + bundle, "
+            f"or Ctrl-C to abort."
+        )
+        try:
+            input("")
+        except (KeyboardInterrupt, EOFError):
+            print("\naborted by user", file=sys.stderr)
+            return 1
+
+    args.indices = None
+    rc = _cmd_codegen_concepts(args)
+    if rc != 0:
+        return rc
+    return _cmd_bundle(args)
+
+
 def _cmd_gen_skill_docs(args) -> int:
     written = generate_skill_docs(args.skill_dir)
     for path in written:
@@ -149,6 +314,74 @@ def build_parser() -> argparse.ArgumentParser:
         help="the skill directory (default: skill)",
     )
     p_gen.set_defaults(func=_cmd_gen_skill_docs)
+
+    p_analyze = sub.add_parser(
+        "analyze",
+        help="LLM stage 1: extract concept candidates from an input file",
+    )
+    p_analyze.add_argument("input", help="path to text / code / PDF input")
+    p_analyze.add_argument(
+        "--kind", choices=["text", "code", "pdf"], required=True
+    )
+    p_analyze.add_argument(
+        "-o", "--workdir", default="manim_skill_out",
+        help="output directory (default: manim_skill_out)",
+    )
+    p_analyze.add_argument(
+        "--guide", default=None,
+        help="optional one-line guide prompt added to the LLM input",
+    )
+    p_analyze.set_defaults(func=_cmd_analyze)
+
+    p_codegen = sub.add_parser(
+        "codegen-concepts",
+        help="LLM stage 2: turn workdir/concepts.json into spec_NN.json files",
+    )
+    p_codegen.add_argument(
+        "workdir", help="directory holding concepts.json (from `analyze`)"
+    )
+    p_codegen.add_argument(
+        "--indices", default=None,
+        help="comma-separated subset of concept indices to codegen "
+             "(default: all)",
+    )
+    p_codegen.set_defaults(func=_cmd_codegen_concepts)
+
+    p_bundle = sub.add_parser(
+        "bundle",
+        help="render every spec_*.json under workdir as one batch + zip",
+    )
+    p_bundle.add_argument("workdir", help="directory holding spec_*.json")
+    p_bundle.add_argument(
+        "--quality",
+        choices=["low", "medium", "high", "production", "fourk"],
+        default="medium",
+    )
+    p_bundle.set_defaults(func=_cmd_bundle)
+
+    p_demo = sub.add_parser(
+        "demo",
+        help="end-to-end: analyze -> pause for review -> codegen -> bundle",
+    )
+    p_demo.add_argument("input", help="path to text / code / PDF input")
+    p_demo.add_argument(
+        "--kind", choices=["text", "code", "pdf"], required=True
+    )
+    p_demo.add_argument(
+        "-o", "--workdir", default="manim_skill_out",
+        help="output directory (default: manim_skill_out)",
+    )
+    p_demo.add_argument("--guide", default=None)
+    p_demo.add_argument(
+        "--yes", action="store_true",
+        help="skip the review pause between analyze and codegen",
+    )
+    p_demo.add_argument(
+        "--quality",
+        choices=["low", "medium", "high", "production", "fourk"],
+        default="medium",
+    )
+    p_demo.set_defaults(func=_cmd_demo)
 
     return parser
 

@@ -56,6 +56,28 @@ manim-skill render path/to/spec.json --remote http://<host>:8000    # render via
 
 `--remote` (or the `MANIM_SKILL_BACKEND` env var) submits the spec to the deployed service and polls for the result instead of rendering in-process. If a `raw` beat fails to render, `render` prints the traceback — fix the spec and render again.
 
+For the LLM-driven flow (input → concepts → specs → bundle) the CLI exposes the same stages the web service uses, with a review checkpoint between analyze and codegen:
+
+```bash
+# Stage 1: LLM analyze; writes <workdir>/concepts.json
+manim-skill analyze paper.pdf --kind pdf -o out
+
+# (Optional) edit out/concepts.json — drop / reorder / rewrite concepts
+
+# Stage 2: LLM codegen for each concept; writes <workdir>/spec_NN.json
+manim-skill codegen-concepts out                    # all concepts
+manim-skill codegen-concepts out --indices 0,2,4    # subset
+
+# Stage 3: local docker render; writes <workdir>/output.zip
+manim-skill bundle out --quality high               # 1080p60
+
+# Or one-shot, with an interactive pause for review between stages 1 and 2:
+manim-skill demo paper.pdf --kind pdf -o out                # prompts before codegen
+manim-skill demo paper.pdf --kind pdf -o out --yes          # skip the prompt
+```
+
+LLM endpoint is read from `MANIM_SKILL_LLM_BASE_URL` (default `http://localhost:11434/v1`), `MANIM_SKILL_LLM_MODEL` (default `qwen3.5-35b`), and `MANIM_SKILL_LLM_API_KEY` env vars. When an agent (Claude Code, etc.) is the human-checkpoint driver, it should call `analyze` / `codegen-concepts` / `bundle` separately and run its own review UI between them.
+
 ### Web pipeline in Python
 
 `manim_skill.llm.run_pipeline` runs input → analyze → codegen → render directly, for scripting:

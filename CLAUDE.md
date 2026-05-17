@@ -15,12 +15,16 @@ Both produce/consume the same **scene spec** (a validated JSON object) and go th
 
 ```bash
 pip install -e ".[dev]"          # install (re-run after pyproject changes — entry point / deps)
-pytest -m "not docker"           # fast suite — no Docker needed (~210 tests)
-pytest                           # full suite incl. docker integration tests (~227 tests, slow)
+pytest -m "not docker"           # fast suite — no Docker needed (~285 tests)
+pytest                           # full suite incl. docker integration tests (~310 tests, slow)
 pytest tests/llm/test_codegen.py::test_generate_spec_valid_first_try -v   # single test
 docker build -t manim-skill:latest -f docker/Dockerfile .                # (re)build the universal image
 docker compose --env-file .env.example up -d    # run the full service stack locally (redis/api/worker/ui)
-manim-skill catalog | validate <spec.json> | render <spec.json> [--remote URL] | gen-skill-docs
+manim-skill catalog | validate <spec.json> | render <spec.json> [--remote URL] [--quality ...] | gen-skill-docs
+manim-skill analyze <input> --kind text|code|pdf -o <wd>   # LLM stage 1: input -> concepts.json
+manim-skill codegen-concepts <wd> [--indices 0,2]          # LLM stage 2: concepts -> spec_NN.json
+manim-skill bundle <wd> [--quality medium]                 # local docker render -> output.zip
+manim-skill demo <input> --kind ... -o <wd> [--yes]        # 3 stages, interactive pause before codegen unless --yes
 ```
 
 Docker integration tests are marked `@pytest.mark.docker` and require Docker Desktop running plus the `manim-skill:latest` image built. **Rebuild the image after changing anything under `manim_skill/`** — `docker/Dockerfile` pip-installs the whole package, so it goes stale (the same universal image is the render container *and* the api/worker/ui services). The `tests/test_compose_e2e.py` test additionally needs a Redis on the dev box.

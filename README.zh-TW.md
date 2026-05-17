@@ -56,6 +56,28 @@ manim-skill render path/to/spec.json --remote http://<host>:8000    # 透過部�
 
 `--remote`（或 `MANIM_SKILL_BACKEND` 環境變數）會把 spec 提交給部署的服務並輪詢結果，而非在本機 in-process 渲染。若某個 `raw` beat 渲染失敗，`render` 會印出 traceback——修正 spec 後再渲染一次。
 
+LLM-driven 流程（輸入 → 概念 → spec → 合輯）CLI 把 web 服務同樣的階段攤出來，在 analyze 跟 codegen 之間留審核點：
+
+```bash
+# 階段 1：LLM analyze；寫 <workdir>/concepts.json
+manim-skill analyze paper.pdf --kind pdf -o out
+
+# (可選) 編輯 out/concepts.json — 刪／重排／改寫概念
+
+# 階段 2：每個概念跑 codegen；寫 <workdir>/spec_NN.json
+manim-skill codegen-concepts out                    # 全部概念
+manim-skill codegen-concepts out --indices 0,2,4    # 只挑幾個
+
+# 階段 3：本機 docker render；寫 <workdir>/output.zip
+manim-skill bundle out --quality high               # 1080p60
+
+# 或一鍵 demo，階段 1 跟 2 之間互動式停下來等審核：
+manim-skill demo paper.pdf --kind pdf -o out                # codegen 前會 prompt
+manim-skill demo paper.pdf --kind pdf -o out --yes          # 跳過 prompt
+```
+
+LLM endpoint 從 `MANIM_SKILL_LLM_BASE_URL`（預設 `http://localhost:11434/v1`）、`MANIM_SKILL_LLM_MODEL`（預設 `qwen3.5-35b`）、`MANIM_SKILL_LLM_API_KEY` 環境變數讀。若是 agent（Claude Code 等）擔任人工確認者，建議分別呼叫 `analyze` / `codegen-concepts` / `bundle`，自己跑審核 UI。
+
 ### 在 Python 裡跑 Web pipeline
 
 `manim_skill.llm.run_pipeline` 直接跑「輸入 → analyze → codegen → render」，適合腳本化：
