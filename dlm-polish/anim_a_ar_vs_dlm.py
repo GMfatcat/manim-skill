@@ -23,11 +23,7 @@ class SceneA(MovingCameraScene):
         title = title_text("AR vs dLM 生成過程", size=36)
         title.to_edge(UP, buff=0.6)
         
-        prompt_label = label_text("Generating: \"The cat sat on mat\"", size=16)
-        prompt_label.next_to(title, DOWN, buff=0.3)
-        
         self.play(Write(title), run_time=0.8)
-        self.play(FadeIn(prompt_label), run_time=0.5)
         self.wait(0.5)
         
         # 左右分區標題

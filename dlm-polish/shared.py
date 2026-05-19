@@ -130,18 +130,14 @@ def make_chapter_card(num, title_zh, title_en):
                        color=ACCENT, weight=BOLD)
     chapter_num.shift(UP * 0.4)
     
-    title = Text(title_zh, font=FONT_DISPLAY, font_size=36, 
+    title = Text(title_zh, font=FONT_DISPLAY, font_size=36,
                  weight=BOLD, color=INK)
     title.shift(DOWN * 0.3)
-    
-    subtitle = Text(title_en, font=FONT_MONO, font_size=16, 
-                    color=INK_SOFT, slant=ITALIC)
-    subtitle.shift(DOWN * 1)
-    
+
     line_bot = Line(LEFT * 3, RIGHT * 3, color=INK_FAINT, stroke_width=1)
-    line_bot.shift(DOWN * 1.6)
-    
-    return VGroup(line_top, chapter_num, title, subtitle, line_bot)
+    line_bot.shift(DOWN * 1.2)
+
+    return VGroup(line_top, chapter_num, title, line_bot)
 
 
 def transition_to_chapter(scene, num, title_zh, title_en, duration=3.0):

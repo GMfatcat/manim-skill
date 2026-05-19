@@ -177,15 +177,11 @@ def do_transition(scene, num, title_zh, title_en):
     title = Text(title_zh, font=FONT_DISPLAY, font_size=36,
                  weight=BOLD, color=INK)
     title.shift(DOWN * 0.3)
-    
-    subtitle = Text(title_en, font=FONT_MONO, font_size=16,
-                    color=INK_SOFT, slant=ITALIC)
-    subtitle.shift(DOWN * 1)
-    
+
     line_bot = Line(LEFT * 3, RIGHT * 3, color=INK_FAINT, stroke_width=1)
-    line_bot.shift(DOWN * 1.6)
-    
-    card = VGroup(line_top, chapter_num, title, subtitle, line_bot)
+    line_bot.shift(DOWN * 1.2)
+
+    card = VGroup(line_top, chapter_num, title, line_bot)
     
     # 1.0s fade in
     scene.play(FadeIn(card, shift=UP * 0.3), run_time=1.0)

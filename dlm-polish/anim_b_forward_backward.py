@@ -249,14 +249,7 @@ class SceneB(MovingCameraScene):
         )
         mirror_arrow.move_to(RIGHT * 4 + ORIGIN)
         
-        summary = body_text(
-            "Same model handles all t · T at inference is config",
-            size=16, color=INK, italic=True
-        )
-        summary.move_to(LEFT * 1 + DOWN * 0.05)
-        
         self.play(Create(mirror_arrow), run_time=0.6)
-        self.play(FadeIn(summary, shift=UP * 0.2), run_time=0.8)
         self.wait(2.5)
         
         # 收尾淡出

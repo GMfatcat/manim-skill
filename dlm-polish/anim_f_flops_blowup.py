@@ -200,10 +200,14 @@ class SceneF(MovingCameraScene):
             new_flops.move_to(axes.c2p(2050, 55))
             self.play(Transform(current_flops, new_flops), run_time=0.25)
         
-        # 強調差距箭頭
+        # 強調差距箭頭：垂直連接 AR 柱頂到 dLM 柱頂；
+        # ar_top 與 dlm_top 因為左右各偏 0.18 而不在同 x，
+        # 強制共用 ar_top.x 才會是真正的垂直線。
+        _ar_top = ar_bars_mid[-1].get_top()
+        _dlm_top = dlm_bars_mid[-1].get_top()
         slowdown_arrow = DoubleArrow(
-            ar_bars_mid[-1].get_top() + UP * 0.3,
-            dlm_bars_mid[-1].get_top() + UP * 0.3,
+            [_ar_top[0], _ar_top[1] + 0.3, 0],
+            [_ar_top[0], _dlm_top[1] + 0.3, 0],
             buff=0.05, color=WARN, stroke_width=2,
             max_tip_length_to_length_ratio=0.06
         )
