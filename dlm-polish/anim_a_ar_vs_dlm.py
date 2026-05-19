@@ -180,7 +180,7 @@ class SceneA(MovingCameraScene):
                 self.wait(0.3)
         
         # dLM 完成註記
-        dlm_done = mono_text("✓ 3 steps (parallel)", size=14, color=WARN)
+        dlm_done = mono_text("✓ 3 steps", size=14, color=WARN)
         dlm_done.next_to(dlm_boxes, DOWN, buff=0.5)
         self.play(FadeIn(dlm_done, shift=UP * 0.1), run_time=0.5)
         
@@ -202,13 +202,13 @@ class SceneA(MovingCameraScene):
         )
         conclusion_bg.move_to(DOWN * 2.5)
         
-        conclusion_left = mono_text("AR: 5 sequential steps", size=18, color=ACCENT)
+        conclusion_left = mono_text("AR · 5 steps", size=18, color=ACCENT)
         conclusion_left.move_to(LEFT * 2.8 + DOWN * 2.5)
-        
+
         vs_text = mono_text("vs", size=16, color=INK_FAINT)
         vs_text.move_to(DOWN * 2.5)
-        
-        conclusion_right = mono_text("dLM: 3 parallel steps", size=18, color=WARN)
+
+        conclusion_right = mono_text("dLM · 3 steps", size=18, color=WARN)
         conclusion_right.move_to(RIGHT * 2.8 + DOWN * 2.5)
         
         self.play(FadeIn(conclusion_bg), run_time=0.4)

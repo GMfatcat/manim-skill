@@ -104,12 +104,9 @@ class SceneF(MovingCameraScene):
         )
         self.play(FadeIn(ar_bar_64_label), FadeIn(dlm_bar_64_label), run_time=0.4)
         
-        baseline_note = mono_text("Short context: both work fine", size=14, color=INK_SOFT)
-        baseline_note.move_to(DOWN * 3.1)
-        self.play(FadeIn(baseline_note), run_time=0.5)
         self.wait(1.8)
-        self.play(FadeOut(baseline_note), run_time=0.4)
-        
+
+
         # ============ Scene 3: Slider 拉動 (18-38s) ============
         # 我們不真的做 slider，而是用 N 值線性增長到 2048，柱狀圖跟著變
         # 但這太複雜 - 改為:在 4 個關鍵 N 值畫出柱狀圖,然後連成曲線
@@ -341,27 +338,10 @@ class SceneF(MovingCameraScene):
             run_time=0.6
         )
         
-        # 大箭頭強調差距
-        big_finding_bg = Rectangle(
-            width=8, height=0.8,
-            fill_color=WARN, fill_opacity=0.15,
-            stroke_color=WARN, stroke_width=2
-        )
-        big_finding_bg.move_to(UP * 1.0)
-        
-        big_finding = mono_text("dLM @ N=2048: 6.3× slower · ~100× FLOPs", 
-                                  size=18, color=WARN, )
-        big_finding.move_to(big_finding_bg.get_center())
-        
-        self.play(FadeIn(big_finding_bg), FadeIn(big_finding), run_time=0.6)
-        
-        # 底部來源
-        source = make_footer_caption("Source: Beyond Autoregression (arxiv 2509.11252) · DiffuCoder-7B-cpGRPO on MBPP")
-        source.move_to(DOWN * 3.3)
-        self.play(FadeIn(source), run_time=0.4)
-        
-        # Takeaway
-        takeaway = body_text("Long-context RAG → still use AR", 
+        # Takeaway only — the inline 100× / 6.3× labels in the zoom
+        # section already carry the numbers; an extra wide banner sits
+        # on top of the bar chart, so we drop it.
+        takeaway = body_text("Long-context RAG → still use AR",
                               size=16, color=INK, italic=True)
         takeaway.move_to(UP * 1.8 + RIGHT * 0)
         self.play(FadeIn(takeaway, shift=UP * 0.1), run_time=0.5)

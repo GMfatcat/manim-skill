@@ -74,10 +74,6 @@ class SceneC(MovingCameraScene):
             self.add(dot)
             self.play(dot.animate.move_to(target.get_center()), run_time=0.15)
         
-        # 強調訊息
-        sampling_note = mono_text("Each training step samples a random t", size=14, color=INK_SOFT)
-        sampling_note.next_to(train_axis, DOWN, buff=0.7)
-        self.play(FadeIn(sampling_note), run_time=0.5)
         self.wait(0.5)
         
         # 🔍 Zoom-in #1: 拉近 t 軸中段，強調連續分佈
@@ -100,17 +96,11 @@ class SceneC(MovingCameraScene):
             run_time=2.0
         )
         
-        # 浮現 "no discrete steps" 強調
-        no_steps_note = mono_text("No discrete steps · ratio is a real number", size=13, color=WARN)
-        no_steps_note.next_to(train_axis, UP, buff=0.5)
-        self.play(FadeIn(no_steps_note, shift=DOWN * 0.1), run_time=0.6)
         self.wait(1.0)
         
         # Zoom out
         self.play(
             self.camera.frame.animate.move_to(ORIGIN).scale(1/0.6),
-            FadeOut(no_steps_note),
-            FadeOut(sampling_note),
             run_time=1.0,
             rate_func=smooth
         )

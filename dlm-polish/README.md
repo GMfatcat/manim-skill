@@ -84,7 +84,7 @@ EOF
 ffmpeg -f concat -safe 0 -i concat.txt -c copy dlm_full.mp4
 ```
 
-合成時長約 3:25 @ 1080p60（~16 MB）。所有片段直接 stream-copy，concat 本身 <1 秒。
+合成時長約 3:22 @ 1080p60（~15 MB）。所有片段直接 stream-copy，concat 本身 <1 秒。
 
 ## 設計慣例
 
@@ -112,6 +112,7 @@ zoom 效果若需調整 (放大倍率、時機點)，搜尋 `🔍 Zoom-in` 標�
 ## 已知限制 / TODO
 
 - 字型：`manim-skill:latest` docker image 已內建 IBM Plex Latin（Sans / Serif / Mono），CJK 走 Noto CJK fallback。不裝 IBM Plex 的環境會看到 Latin 字距不平均（"parallel" 之類單字看起來像 "para llel"），那是 Pango per-glyph fallback 的後遺症。`shared.py` 把 `FONT_DISPLAY` 設成 `"IBM Plex Sans"`（不是 "IBM Plex Sans TC"），因為後者不在 IBM/plex GitHub repo，Pango 解析不到就會 fallback。
+- 即使裝了 Plex 字型，小字級（size ≤ 14）+ 含括號的旁白（例如 `"✓ 3 steps (parallel)"`）仍可能在括號附近出現字距裂縫；對 PPT 級交付，旁白盡量精簡掉，必要字才 render。
 - `anim_full.py` 的 `FullVideo` class 在現行 Manim 失敗（camera read-only），實務改用上面的 ffmpeg concat 流程。`TransitionCh1`–`TransitionCh6` 已內建在 `anim_full.py`，可直接用 manim CLI 渲染。
 - 動畫節奏: 每個 Scene 的 `wait()` 時長都是固定值，講解節奏不同的話可以個別調整
-- `anim_f_flops_blowup.py` 已修正 `slowdown_arrow` 的 `RIGHT * 0.5` shift → `RIGHT * 1.8`，避免雙箭頭尾端遮到 FLOPs 標籤的數字
+- `anim_f_flops_blowup.py` 已修正 `slowdown_arrow` 的 `RIGHT * 0.5` shift → `RIGHT * 1.8`，避免雙箭頭尾端遮到 FLOPs 標籤的數字；同時移除 `big_finding` 寬幅 banner，原本會壓在 AR 柱狀圖上方擋到 baseline bars——關鍵數字（100×、6.3×）在 zoom 區段已內嵌。

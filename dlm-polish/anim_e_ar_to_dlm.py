@@ -106,10 +106,6 @@ class SceneE(MovingCameraScene):
             rate_func=smooth
         )
         
-        # 標示「每個 token 只看過去」
-        zoom_note = mono_text("Each token sees only previous tokens", size=12, color=ACCENT)
-        zoom_note.next_to(grid_group, DOWN, buff=0.3)
-        
         # 標示下三角
         triangle_note = mono_text("Lower triangular", size=10, color=ACCENT_SOFT)
         triangle_note.move_to(LEFT * 1.0 + DOWN * 1.5)
@@ -120,13 +116,13 @@ class SceneE(MovingCameraScene):
             max_tip_length_to_length_ratio=0.15
         )
         
-        self.play(FadeIn(zoom_note), FadeIn(triangle_note), Create(triangle_arrow), run_time=0.6)
+        self.play(FadeIn(triangle_note), Create(triangle_arrow), run_time=0.6)
         self.wait(1.2)
         
         # Zoom out
         self.play(
             self.camera.frame.animate.move_to(ORIGIN).scale(1/0.6),
-            FadeOut(zoom_note), FadeOut(triangle_note), FadeOut(triangle_arrow),
+            FadeOut(triangle_note), FadeOut(triangle_arrow),
             run_time=0.9,
             rate_func=smooth
         )

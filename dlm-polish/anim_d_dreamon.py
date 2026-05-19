@@ -257,10 +257,6 @@ class SceneD(MovingCameraScene):
         self.play(Transform(len_label, new_len_label), run_time=0.4)
         self.wait(0.5)
         
-        # 強調 expansion 完成
-        expand_done_note = mono_text("✓ +1 slot · ready for more tokens", size=12, color=EXPAND)
-        expand_done_note.next_to(len_label, DOWN, buff=0.3)
-        self.play(FadeIn(expand_done_note), run_time=0.5)
         self.wait(1.0)
         
         # Zoom out
@@ -276,7 +272,6 @@ class SceneD(MovingCameraScene):
             FadeOut(seq_boxes[3]), FadeOut(seq_boxes[4]),
             FadeOut(new_mask_1), FadeOut(new_mask_2),
             FadeOut(len_label), FadeOut(section_label),
-            FadeOut(expand_done_note),
             run_time=0.6
         )
         
