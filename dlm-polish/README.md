@@ -111,7 +111,7 @@ zoom 效果若需調整 (放大倍率、時機點)，搜尋 `🔍 Zoom-in` 標�
 
 ## 已知限制 / TODO
 
-- 字型 fallback: 系統若沒有 IBM Plex，會 fallback 到 Sans Serif / Monospace，視覺會不太一致。建議裝好字型
+- 字型：`manim-skill:latest` docker image 已內建 IBM Plex Latin（Sans / Serif / Mono），CJK 走 Noto CJK fallback。不裝 IBM Plex 的環境會看到 Latin 字距不平均（"parallel" 之類單字看起來像 "para llel"），那是 Pango per-glyph fallback 的後遺症。`shared.py` 把 `FONT_DISPLAY` 設成 `"IBM Plex Sans"`（不是 "IBM Plex Sans TC"），因為後者不在 IBM/plex GitHub repo，Pango 解析不到就會 fallback。
 - `anim_full.py` 的 `FullVideo` class 在現行 Manim 失敗（camera read-only），實務改用上面的 ffmpeg concat 流程。`TransitionCh1`–`TransitionCh6` 已內建在 `anim_full.py`，可直接用 manim CLI 渲染。
 - 動畫節奏: 每個 Scene 的 `wait()` 時長都是固定值，講解節奏不同的話可以個別調整
 - `anim_f_flops_blowup.py` 已修正 `slowdown_arrow` 的 `RIGHT * 0.5` shift → `RIGHT * 1.8`，避免雙箭頭尾端遮到 FLOPs 標籤的數字

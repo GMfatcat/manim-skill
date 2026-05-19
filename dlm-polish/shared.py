@@ -23,7 +23,12 @@ RULE = "#C8C2B0"              # 分割線
 RULE_SOFT = "#DDD7C5"         # 淺分割線
 
 # ---------- 字型 ----------
-FONT_DISPLAY = "IBM Plex Sans TC"
+# Latin 用 IBM Plex（已內建在 manim-skill docker image 裡）。CJK 字仍走
+# Noto CJK fallback —— IBM Plex Sans TC 不在 IBM/plex GitHub repo，所以
+# 沒裝。把 FONT_DISPLAY 從 "IBM Plex Sans TC" 改回 "IBM Plex Sans"，避
+# 免 Pango 對 Latin 鄰接字元做 per-glyph fallback（會造成 "parallel"
+# 變 "para llel" 那種不平均字距）。
+FONT_DISPLAY = "IBM Plex Sans"
 FONT_BODY = "IBM Plex Serif"
 FONT_MONO = "IBM Plex Mono"
 
