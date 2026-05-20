@@ -55,7 +55,7 @@ class Opening(MovingCameraScene):
         # AI Team 標記
         team_label = Text(
             "AI Team research memo  ·  2026/05",
-            font=FONT_MONO, font_size=16, color=INK_SOFT, slant=ITALIC
+            font=FONT_MONO, font_size=16, color=INK_SOFT
         )
         team_label.shift(DOWN * 2)
         
@@ -98,7 +98,7 @@ class Closing(MovingCameraScene):
         
         credit = Text(
             "Compiled by AI Team  ·  2026-05",
-            font=FONT_MONO, font_size=14, color=INK_FAINT, slant=ITALIC
+            font=FONT_MONO, font_size=14, color=INK_FAINT
         )
         credit.next_to(end_text, DOWN, buff=0.6)
         
@@ -268,7 +268,7 @@ class FullVideo(MovingCameraScene):
         
         team_label = Text(
             "AI Team research memo  ·  2026/05",
-            font=FONT_MONO, font_size=16, color=INK_SOFT, slant=ITALIC
+            font=FONT_MONO, font_size=16, color=INK_SOFT
         )
         team_label.shift(DOWN * 2)
         
@@ -301,7 +301,7 @@ class FullVideo(MovingCameraScene):
         
         credit = Text(
             "Compiled by AI Team  ·  2026-05",
-            font=FONT_MONO, font_size=14, color=INK_FAINT, slant=ITALIC
+            font=FONT_MONO, font_size=14, color=INK_FAINT
         )
         credit.next_to(end_text, DOWN, buff=0.6)
         

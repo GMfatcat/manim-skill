@@ -231,8 +231,8 @@ class SceneC(MovingCameraScene):
         )
         
         # 最終 takeaway
-        takeaway = body_text("One model · any T at inference · no retraining", 
-                              size=18, color=INK, italic=True)
+        takeaway = body_text("One model · any T at inference · no retraining",
+                              size=18, color=INK)
         takeaway.next_to(all_schedules[2][1], DOWN, buff=0.8)
         self.play(FadeIn(takeaway, shift=UP * 0.2), run_time=0.7)
         self.wait(2.0)

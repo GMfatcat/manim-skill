@@ -362,7 +362,7 @@ class SceneE(MovingCameraScene):
         
         # 下方對照
         comparison_text = body_text(
-            "Block-wise = production-ready choice", size=16, color=INK, italic=True
+            "Block-wise = production-ready choice", size=16, color=INK
         )
         comparison_text.move_to(DOWN * 2.5)
         self.play(FadeIn(comparison_text), run_time=0.6)

@@ -20,7 +20,7 @@ class SceneB(MovingCameraScene):
         setup_scene_background(self)
         
         # ============ Scene 1: 上下分屏 (0-5s) ============
-        title = title_text("Training / Inference Mirror Process", size=32)
+        title = title_text("Training and Inference Mirror", size=32)
         title.to_edge(UP, buff=0.4)
         self.play(Write(title), run_time=0.8)
         
@@ -140,7 +140,7 @@ class SceneB(MovingCameraScene):
         self.play(FadeIn(sampling_note, shift=UP * 0.1), run_time=0.5)
         
         # Loss 公式浮現
-        loss_formula = mono_text("L = E_t [ (1/t) · Σ -log P(x | x_t) ]", size=13, color=INK_SOFT)
+        loss_formula = mono_text("L = E_t [ (1÷t) · Σ -log P(x | x_t) ]", size=13, color=INK_SOFT)
         loss_formula.next_to(sampling_note, DOWN, buff=0.2)
         self.play(FadeIn(loss_formula), run_time=0.6)
         self.wait(1.0)

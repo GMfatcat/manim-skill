@@ -130,18 +130,18 @@ class SceneD(MovingCameraScene):
         )
         
         # 詳細註解
-        expand_note = body_text("展開為 2 個新 mask", size=14, color=EXPAND, italic=True)
+        expand_note = body_text("展開為 2 個新 mask", size=14, color=EXPAND)
         expand_note.next_to(expand_group, DOWN, buff=0.25)
-        
-        delete_note = body_text("從序列中移除", size=14, color=WARN, italic=True)
+
+        delete_note = body_text("從序列中移除", size=14, color=WARN)
         delete_note.next_to(delete_group, DOWN, buff=0.25)
-        
+
         self.play(FadeIn(expand_note), FadeIn(delete_note), run_time=0.5)
         self.wait(0.8)
-        
+
         key_insight = body_text(
             "Just 2 more tokens in vocab · loss & architecture unchanged",
-            size=15, color=INK, italic=True
+            size=15, color=INK
         )
         key_insight.move_to(DOWN * 1.7)
         self.play(FadeIn(key_insight, shift=UP * 0.1), run_time=0.6)
@@ -235,14 +235,14 @@ class SceneD(MovingCameraScene):
         new_mask_1.move_to(expand_target_pos + LEFT * 0.4)
         new_mask_2.move_to(expand_target_pos + RIGHT * 0.4)
         
-        # 右邊兩格向右滑動 0.8 距離
-        original_idx3_pos = seq_boxes[3].get_center()
-        original_idx4_pos = seq_boxes[4].get_center()
-        
+        # Expand 插入 2 格、原本只佔 1 格 → 兩邊各往外滑 0.4 留出 1 格空間
+        # （原本只把右邊滑 0.8，會讓 box[1] 與 new_mask_1 重疊 0.3 個 box 寬度）
         self.play(
             FadeOut(seq_boxes[expand_idx], scale=0.5),
-            seq_boxes[3].animate.move_to(original_idx3_pos + RIGHT * 0.8),
-            seq_boxes[4].animate.move_to(original_idx4_pos + RIGHT * 0.8),
+            seq_boxes[0].animate.shift(LEFT * 0.4),
+            seq_boxes[1].animate.shift(LEFT * 0.4),
+            seq_boxes[3].animate.shift(RIGHT * 0.4),
+            seq_boxes[4].animate.shift(RIGHT * 0.4),
             run_time=0.6
         )
         self.play(

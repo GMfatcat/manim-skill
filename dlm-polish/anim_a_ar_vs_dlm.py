@@ -29,12 +29,12 @@ class SceneA(MovingCameraScene):
         # 左右分區標題
         ar_header = title_text("Autoregressive", size=24, color=ACCENT)
         ar_header.move_to(LEFT * 3.5 + UP * 1.8)
-        ar_sub = label_text("Sequential · 1 token / step", size=13)
+        ar_sub = label_text("Sequential · 1 token per step", size=13)
         ar_sub.next_to(ar_header, DOWN, buff=0.15)
         
         dlm_header = title_text("Diffusion (dLM)", size=24, color=WARN)
         dlm_header.move_to(RIGHT * 3.5 + UP * 1.8)
-        dlm_sub = label_text("Parallel · all positions / step", size=13)
+        dlm_sub = label_text("Parallel · all positions per step", size=13)
         dlm_sub.next_to(dlm_header, DOWN, buff=0.15)
         
         divider = DashedLine(UP * 2.5, DOWN * 3, color=RULE, dash_length=0.1)

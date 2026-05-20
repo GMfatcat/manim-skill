@@ -166,5 +166,5 @@ def setup_scene_background(scene):
 
 def make_footer_caption(text):
     """畫面底部來源引用小字"""
-    return Text(text, font=FONT_MONO, font_size=12, 
-                color=INK_FAINT, slant=ITALIC)
+    return Text(text, font=FONT_MONO, font_size=12,
+                color=INK_FAINT)

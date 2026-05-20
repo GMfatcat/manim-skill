@@ -62,7 +62,7 @@ class SceneF(MovingCameraScene):
         # 軸標籤
         x_label = mono_text("Generation length (tokens)", size=13, color=INK_FAINT)
         x_label.next_to(axes.x_axis, DOWN, buff=0.3)
-        y_label = mono_text("Throughput (tok/s)", size=13, color=INK_FAINT)
+        y_label = mono_text("Throughput (tps)", size=13, color=INK_FAINT)
         y_label.next_to(axes.y_axis, LEFT, buff=0.3).rotate(PI/2)
         
         self.play(Create(axes), FadeIn(x_label), FadeIn(y_label), run_time=1.0)
@@ -85,7 +85,7 @@ class SceneF(MovingCameraScene):
             fill_color=ACCENT, fill_opacity=0.85, stroke_width=0
         )
         ar_bar_64.move_to(axes.c2p(64, 45) + LEFT * 0.18)
-        ar_bar_64_label = mono_text("90 tok/s", size=11, color=ACCENT)
+        ar_bar_64_label = mono_text("90 tps", size=11, color=ACCENT)
         ar_bar_64_label.next_to(ar_bar_64, UP, buff=0.1)
         
         # dLM 柱: 高度 31.1 tok/s
@@ -94,7 +94,7 @@ class SceneF(MovingCameraScene):
             fill_color=WARN, fill_opacity=0.85, stroke_width=0
         )
         dlm_bar_64.move_to(axes.c2p(64, 31.1/2) + RIGHT * 0.18)
-        dlm_bar_64_label = mono_text("31.1 tok/s", size=11, color=WARN)
+        dlm_bar_64_label = mono_text("31.1 tps", size=11, color=WARN)
         dlm_bar_64_label.next_to(dlm_bar_64, UP, buff=0.1)
         
         self.play(
@@ -315,7 +315,7 @@ class SceneF(MovingCameraScene):
         self.play(FadeIn(explain_T), FadeIn(explain_N), run_time=0.6)
         
         # 具體例子計算
-        example_calc = mono_text("e.g. T=32, N=2048 → ~4.3B attention ops/sequence", 
+        example_calc = mono_text("e.g. T=32, N=2048 → ~4.3B attention ops per seq",
                                    size=11, color=INK_SOFT)
         example_calc.next_to(explain_N, DOWN, buff=0.15)
         self.play(FadeIn(example_calc), run_time=0.5)
@@ -346,7 +346,7 @@ class SceneF(MovingCameraScene):
         # section already carry the numbers; an extra wide banner sits
         # on top of the bar chart, so we drop it.
         takeaway = body_text("Long-context RAG → still use AR",
-                              size=16, color=INK, italic=True)
+                              size=16, color=INK)
         takeaway.move_to(UP * 1.8 + RIGHT * 0)
         self.play(FadeIn(takeaway, shift=UP * 0.1), run_time=0.5)
         
