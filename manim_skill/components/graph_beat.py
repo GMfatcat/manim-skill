@@ -72,6 +72,7 @@ class GraphBeat(Component):
             edges=edges,
             labels=False,
             vertex_config={"radius": 0.18, "color": THEME.PRIMARY},
+            edge_config={"stroke_color": THEME.RULE},
             layout_scale=3.5,
             **_layout_kwargs(params.layout, params.nodes, edges),
         )

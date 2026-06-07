@@ -61,6 +61,18 @@ def test_component_is_registered():
     assert "GraphBeat" in base.all_names()
 
 
+def test_graph_beat_edge_uses_rule_color():
+    """Graph edges must use THEME.RULE so they are visible on light BG."""
+    from manim_skill.components.graph_beat import GraphBeat, GraphBeatParams
+    from manim_skill.components.theme import THEME
+
+    mobj = GraphBeat().build(GraphBeatParams(nodes=["A", "B"], edges=[["A", "B"]]))
+    # diagram = VGroup(graph, external_labels); graph is submobjects[0]
+    graph = mobj.submobjects[0]
+    edge_mob = graph.edges[("A", "B")]
+    assert edge_mob.get_color().to_hex().lower() == THEME.RULE.lower()
+
+
 def test_graph_beat_uses_theme_fonts():
     """Node labels must use FONT_MONO (label_text) after theme wiring."""
     from manim_skill.components.graph_beat import GraphBeat, GraphBeatParams
