@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Literal
 
 from manim import (
-    BLUE,
     DOWN,
     PI,
     Circle,
@@ -13,19 +12,19 @@ from manim import (
     Rotate,
     Scene,
     Square,
-    Text,
     Triangle,
     VGroup,
 )
 from pydantic import BaseModel
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text
 
 _SHAPES = {
-    "circle": lambda: Circle(radius=1.0, color=BLUE),
-    "square": lambda: Square(side_length=2.0, color=BLUE),
-    "triangle": lambda: Triangle(color=BLUE).scale(1.2),
-    "polygon": lambda: RegularPolygon(n=6, color=BLUE).scale(1.2),
+    "circle": lambda: Circle(radius=1.0, color=THEME.PRIMARY),
+    "square": lambda: Square(side_length=2.0, color=THEME.PRIMARY),
+    "triangle": lambda: Triangle(color=THEME.PRIMARY).scale(1.2),
+    "polygon": lambda: RegularPolygon(n=6, color=THEME.PRIMARY).scale(1.2),
 }
 
 
@@ -44,7 +43,7 @@ class GeometryAnim(Component):
         shape = _SHAPES[params.shape]()
         group = VGroup(shape)
         if params.label:
-            group.add(Text(params.label, font_size=28).next_to(shape, DOWN))
+            group.add(body_text(params.label, size=28).next_to(shape, DOWN))
         return group
 
     def animate(
