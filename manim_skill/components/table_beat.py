@@ -67,7 +67,10 @@ class TableBeat(Component):
         if params.row_labels:
             kwargs["row_labels"] = [label_text(r) for r in params.row_labels]
             kwargs["top_left_entry"] = label_text("")
-        table = Table(**kwargs)
+        table = Table(**kwargs, line_config={"stroke_color": THEME.RULE})
+        table.get_horizontal_lines().set_color(THEME.RULE)
+        table.get_vertical_lines().set_color(THEME.RULE)
+        table.get_entries().set_color(THEME.INK)
 
         diagram = VGroup(table)
         if params.title:
@@ -93,7 +96,7 @@ class TableBeat(Component):
         for r, c in params.highlight_cells:
             try:
                 cell = table.get_cell(
-                    (r + row_offset, c + col_offset), color=THEME.HIGHLIGHT
+                    (r + row_offset, c + col_offset), color=THEME.WARN
                 )
                 scene.play(FadeIn(cell), run_time=0.4)
                 scene.play(Indicate(cell), run_time=0.6)
