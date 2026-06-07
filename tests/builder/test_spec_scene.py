@@ -89,3 +89,21 @@ def test_construct_sets_themed_background(monkeypatch):
 
     # manim stores background_color as whatever was assigned; compare hex case-insensitively
     assert scene.camera.background_color.upper() == THEME.BG.upper()
+
+
+def test_render_beat_clamps_oversized_new_mobject(monkeypatch):
+    from manim_skill.builder.spec_scene import SpecScene
+    from manim_skill.components.layout import FRAME_WIDTH
+    from manim_skill.components.theme import MARGIN
+    from manim_skill.spec.schema import Beat
+
+    scene = SpecScene()
+    monkeypatch.setattr(scene, "play", lambda *a, **k: None)
+    monkeypatch.setattr(scene, "wait", lambda *a, **k: None)
+
+    beat = Beat(component="raw", code="self.add(Square(side_length=30))")
+    scene._render_beat(beat)
+
+    squares = [m for m in scene.mobjects if m.__class__.__name__ == "Square"]
+    assert squares, "square should be on the scene"
+    assert squares[0].width <= FRAME_WIDTH - 2 * MARGIN + 1e-6

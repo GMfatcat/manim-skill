@@ -9,6 +9,7 @@ from manim import DOWN, FadeIn, FadeOut, MovingCameraScene, Text
 from manim_skill.builder.camera import apply_camera
 from manim_skill.builder.raw import exec_raw
 from manim_skill.components import base as registry
+from manim_skill.components.layout import clamp_new_mobjects
 from manim_skill.components.theme import THEME, caption_text
 from manim_skill.spec.schema import Beat, SceneSpec
 from manim_skill.spec.validate import validate_spec
@@ -53,6 +54,7 @@ class SpecScene(MovingCameraScene):
             self._render_beat(beat)
 
     def _render_beat(self, beat: Beat) -> None:
+        before = set(self.mobjects)
         if beat.component == "raw":
             exec_raw(beat.code or "", self)
         else:
@@ -60,6 +62,8 @@ class SpecScene(MovingCameraScene):
             params = component.Params.model_validate(beat.params)
             mobject = component.build(params)
             component.animate(self, mobject, params)
+
+        clamp_new_mobjects(self, before)
 
         if beat.caption:
             caption = _build_caption(beat.caption)
