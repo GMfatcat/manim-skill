@@ -5,19 +5,19 @@ from manim import (
     BLUE,
     DOWN,
     LEFT,
-    RED,
     UP,
     Create,
+    ManimColor,
     Mobject,
     Scene,
     Square,
-    Text,
     VGroup,
     interpolate_color,
 )
 from pydantic import BaseModel, Field
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, title_text, label_text
 
 _CELL_SIZE = 0.6
 _MAX_DIAGRAM_WIDTH = 12.0
@@ -28,12 +28,14 @@ class HeatmapBeatParams(BaseModel):
     row_labels: list[str] = Field(default_factory=list)
     col_labels: list[str] = Field(default_factory=list)
     title: str | None = None
-    low_color: str = "BLUE"
-    high_color: str = "RED"
+    low_color: str = THEME.PRIMARY   # emphasis/positive end
+    high_color: str = THEME.WARN     # warning/negative end
 
 
 def _resolve_color(name: str):
-    """Look up a manim color constant by name; fall back to BLUE/RED."""
+    """Resolve a color: hex string or manim constant name; fall back to BLUE."""
+    if name.startswith("#"):
+        return ManimColor(name)
     import manim
 
     color = getattr(manim, name.upper(), None)
@@ -76,8 +78,8 @@ class HeatmapBeat(Component):
 
         if params.col_labels:
             col_group = VGroup()
-            for label in params.col_labels:
-                col_group.add(Text(label, font_size=20))
+            for lbl_str in params.col_labels:
+                col_group.add(label_text(lbl_str, size=20))
             col_group.arrange(direction=[1.0, 0.0, 0.0], buff=0)
             for i, lbl in enumerate(col_group.submobjects):
                 lbl.move_to(grid[0][i].get_center())
@@ -86,8 +88,8 @@ class HeatmapBeat(Component):
 
         if params.row_labels:
             row_group = VGroup()
-            for label in params.row_labels:
-                row_group.add(Text(label, font_size=20))
+            for lbl_str in params.row_labels:
+                row_group.add(label_text(lbl_str, size=20))
             row_group.arrange(DOWN, buff=0)
             for i, lbl in enumerate(row_group.submobjects):
                 lbl.move_to(grid[i][0].get_center())
@@ -95,7 +97,7 @@ class HeatmapBeat(Component):
             diagram.add(row_group)
 
         if params.title:
-            title = Text(params.title, font_size=28)
+            title = title_text(params.title, size=28)
             title.next_to(diagram, UP, buff=0.25)
             diagram.add(title)
 
