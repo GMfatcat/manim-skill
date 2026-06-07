@@ -65,6 +65,7 @@ class OptimizationPath(Component):
             x_length=8.0,
             y_length=4.5,
             tips=False,
+            axis_config={"color": THEME.INK_SOFT},
         )
         graph = axes.plot(fn, color=THEME.PRIMARY)
 
