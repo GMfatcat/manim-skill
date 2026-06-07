@@ -151,3 +151,13 @@ def test_prompt_mentions_layout_helpers():
     generate_spec(client, _CONCEPT, catalog="(catalog)")
     system = client.calls[0][0]
     assert "safe_area" in system or "stack(" in system
+
+
+def test_codegen_prompt_warns_about_spacing_command_backslashes():
+    r"""Lock in the \quad spacing-command guidance (phase-2 eval miss)."""
+    client = FakeLLMClient(response=_VALID_SPEC)
+    generate_spec(client, _CONCEPT, catalog="(catalog)")
+    system = client.calls[0][0]
+    assert "quad" in system
+    assert "spacing" in system.lower()
+    assert r"\\quad" in system  # the correctly double-escaped JSON form is shown

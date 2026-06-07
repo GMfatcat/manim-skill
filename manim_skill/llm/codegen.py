@@ -55,8 +55,12 @@ LaTeX-bearing param. The same over-escape mistake hits LaTeX backslashes:
 - DO NOT write \\\\\\\\frac — that decodes to \\\\frac (two backslashes),
   which is not a valid LaTeX command and the formula beat will fail to
   compile and render as an empty frame.
+- This covers EVERY command, including spacing commands like \\quad, \\, and
+  \\; — they are NOT exempt. Write \\\\quad, never a lone \\quad: a single
+  backslash is dropped when the JSON is decoded and \\quad renders as the
+  literal word "quad".
 
-Correct:  "formula": "\\\\frac{Q K^T}{\\\\sqrt{d_k}}"
+Correct:  "formula": "\\\\frac{Q K^T}{\\\\sqrt{d_k}}" or "a \\\\quad b"
 Wrong:    "formula": "\\\\\\\\frac{Q K^T}{\\\\\\\\sqrt{d_k}}"
 
 VISUAL RULES — keep output clean for a small model; the framework already
