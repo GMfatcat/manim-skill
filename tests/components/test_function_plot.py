@@ -127,3 +127,20 @@ def test_x_range_must_have_2_or_3_entries():
             x_range=[0, 1, 0.1, 99],
             y_range=[0, 1, 0.5],
         )
+
+
+def test_theme_font_wired():
+    from manim_skill.components.theme import FONT_BODY
+
+    comp = FunctionPlot()
+    mobj = comp.build(
+        FunctionPlotParams(
+            expression="x",
+            x_range=[-2, 2, 1],
+            y_range=[-2, 2, 1],
+            title="Linear",
+        )
+    )
+    # diagram = VGroup(axes, graph, title_text); title_text is index 2
+    title_obj = mobj.submobjects[2]
+    assert title_obj.font == FONT_BODY
