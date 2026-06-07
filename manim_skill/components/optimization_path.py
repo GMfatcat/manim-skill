@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 from manim import (
-    BLUE,
     DOWN,
-    RED,
-    YELLOW,
     Axes,
     Create,
     Dot,
     FadeIn,
     Mobject,
     Scene,
-    Text,
     TracedPath,
     VGroup,
 )
@@ -19,6 +15,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from manim_skill.components.base import Component, register
 from manim_skill.components.function_plot import _compile_expression
+from manim_skill.components.theme import THEME, title_text, label_text
 
 _MAX_DIAGRAM_WIDTH = 12.0
 
@@ -69,23 +66,23 @@ class OptimizationPath(Component):
             y_length=4.5,
             tips=False,
         )
-        graph = axes.plot(fn, color=BLUE)
+        graph = axes.plot(fn, color=THEME.PRIMARY)
 
         start_point = axes.c2p(params.start_x, fn(params.start_x))
-        dot = Dot(point=start_point, color=RED, radius=0.1)
+        dot = Dot(point=start_point, color=THEME.WARN, radius=0.1)
 
         diagram = VGroup(axes, graph, dot)
         if params.x_label:
-            x_lbl = Text(params.x_label, font_size=22)
+            x_lbl = label_text(params.x_label, size=22)
             x_lbl.next_to(axes.x_axis.get_end(), DOWN, buff=0.2)
             diagram.add(x_lbl)
         if params.y_label:
-            y_lbl = Text(params.y_label, font_size=22)
+            y_lbl = label_text(params.y_label, size=22)
             y_lbl.next_to(axes.y_axis.get_end(), DOWN, buff=0.2)
             diagram.add(y_lbl)
         if params.title:
             diagram.add(
-                Text(params.title, font_size=28).next_to(axes, DOWN, buff=0.4)
+                title_text(params.title, size=28).next_to(axes, DOWN, buff=0.4)
             )
 
         if diagram.width > _MAX_DIAGRAM_WIDTH:
@@ -110,7 +107,7 @@ class OptimizationPath(Component):
 
         # TracedPath leaves a yellow trail behind the dot as it walks
         # toward the minimum.
-        trace = TracedPath(dot.get_center, stroke_color=YELLOW, stroke_width=4)
+        trace = TracedPath(dot.get_center, stroke_color=THEME.HIGHLIGHT, stroke_width=4)
         scene.add(trace)
 
         for i in range(1, params.n_steps + 1):
