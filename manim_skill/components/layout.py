@@ -5,7 +5,7 @@ raw beats, and the builder's per-beat auto-clamp.
 """
 from __future__ import annotations
 
-from manim import DOWN, ORIGIN, RIGHT, UP, VGroup
+from manim import DOWN, ORIGIN, RIGHT, UP, Group, VGroup
 
 from manim_skill.components.theme import GAP, MARGIN
 
@@ -48,7 +48,13 @@ def stack(mobjs, *, gap=GAP, center=True):
 
 
 def clamp_new_mobjects(scene, before):
-    """Clamp the mobjects added since `before` into the safe frame, as a group."""
+    """Clamp the mobjects added since `before` into the safe frame, as a group.
+
+    Uses ``Group`` (not ``VGroup``): the beat's new mobjects are arbitrary —
+    a non-VMobject (e.g. an ImageMobject or a bare Mobject) is rejected by
+    ``VGroup`` in the render container's manim, which raises mid-render. The
+    general ``Group`` accepts any Mobject and supports the same scale/shift.
+    """
     new = [m for m in scene.mobjects if m not in before]
     if new:
-        safe_area(VGroup(*new))
+        safe_area(Group(*new))
