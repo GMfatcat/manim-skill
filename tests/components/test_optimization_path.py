@@ -102,6 +102,48 @@ def test_component_is_registered():
     assert "OptimizationPath" in base.all_names()
 
 
+def test_axes_use_ink_soft_color():
+    from manim_skill.components.optimization_path import (
+        OptimizationPath,
+        OptimizationPathParams,
+    )
+    from manim_skill.components.theme import THEME
+
+    params = OptimizationPathParams(
+        expression="x**2",
+        x_range=[-2, 2],
+        y_range=[0, 4],
+        start_x=-1.5,
+        min_x=0.0,
+    )
+    mobj = OptimizationPath().build(params)
+    # diagram = VGroup(axes, graph, dot [, labels, title]); axes is submobjects[0]
+    axes = mobj.submobjects[0]
+    assert axes.get_x_axis().get_color().to_hex().lower() == THEME.INK_SOFT.lower()
+
+
+def test_optimization_path_uses_theme_fonts():
+    """Title text must use FONT_DISPLAY (title_text) after theme wiring."""
+    from manim_skill.components.optimization_path import (
+        OptimizationPath,
+        OptimizationPathParams,
+    )
+    from manim_skill.components.theme import FONT_DISPLAY
+
+    params = OptimizationPathParams(
+        expression="x**2",
+        x_range=[-2, 2],
+        y_range=[0, 4],
+        start_x=-1.5,
+        min_x=0.0,
+        title="Gradient Descent",
+    )
+    mobj = OptimizationPath().build(params)
+    # diagram = VGroup(axes, graph, dot, title)  — title is last submobject
+    title = mobj.submobjects[-1]
+    assert title.font == FONT_DISPLAY
+
+
 @pytest.mark.docker
 def test_optimization_path_renders_in_docker(tmp_path):
     spec = SceneSpec(

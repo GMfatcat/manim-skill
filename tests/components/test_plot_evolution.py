@@ -37,3 +37,34 @@ def test_build_with_flat_series_does_not_crash():
 def test_series_requires_at_least_two_points():
     with pytest.raises(ValidationError):
         PlotEvolutionParams(series=[1.0])
+
+
+def test_axes_use_ink_soft_color():
+    from manim_skill.components.theme import THEME
+
+    comp = PlotEvolution()
+    mobj = comp.build(PlotEvolutionParams(series=[1.0, 0.7, 0.4]))
+    # diagram = VGroup(axes, graph [, title]); axes is submobjects[0]
+    axes = mobj.submobjects[0]
+    assert axes.get_x_axis().get_color().to_hex().lower() == THEME.INK_SOFT.lower()
+
+
+def test_graph_line_uses_primary_color():
+    from manim_skill.components.theme import THEME
+
+    comp = PlotEvolution()
+    mobj = comp.build(PlotEvolutionParams(series=[1.0, 0.7, 0.4]))
+    # diagram = VGroup(axes, graph); graph["line_graph"] is the line VMobject
+    graph = mobj.submobjects[1]
+    line = graph["line_graph"]
+    assert line.get_color().to_hex().lower() == THEME.PRIMARY.lower()
+
+
+def test_title_uses_theme_font():
+    from manim_skill.components.theme import FONT_BODY
+
+    comp = PlotEvolution()
+    mobj = comp.build(PlotEvolutionParams(series=[1.0, 0.5], title="Loss Curve"))
+    # diagram = VGroup(axes, graph, title); title is submobjects[2]
+    title = mobj.submobjects[2]
+    assert title.font == FONT_BODY

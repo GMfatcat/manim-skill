@@ -3,25 +3,22 @@ from __future__ import annotations
 from typing import Literal
 
 from manim import (
-    BLUE,
-    GREEN,
-    ORANGE,
     RIGHT,
     Create,
     Mobject,
     Rectangle,
     Scene,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text, label_text
 
 
 def _labeled_box(label: str, color) -> VGroup:
     box = Rectangle(width=1.2, height=1.2, color=color)
-    text = Text(label, font_size=32).move_to(box)
+    text = label_text(label, size=32).move_to(box)
     return VGroup(box, text)
 
 
@@ -38,20 +35,20 @@ class MatrixOp(Component):
     Params = MatrixOpParams
 
     def build(self, params: MatrixOpParams) -> Mobject:
-        parts: list = [_labeled_box(params.a_label, BLUE)]
+        parts: list = [_labeled_box(params.a_label, THEME.PRIMARY)]
 
         if params.op == "matmul":
-            parts.append(Text("x", font_size=40))
-            parts.append(_labeled_box(params.b_label or "B", GREEN))
-            parts.append(Text("=", font_size=40))
-            parts.append(_labeled_box(params.result_label or "C", ORANGE))
+            parts.append(body_text("x", size=40))
+            parts.append(_labeled_box(params.b_label or "B", THEME.PRIMARY_SOFT))
+            parts.append(body_text("=", size=40))
+            parts.append(_labeled_box(params.result_label or "C", THEME.WARN))
         else:
             operator = "T" if params.op == "transpose" else "->"
             suffix = "_T" if params.op == "transpose" else "'"
             default_result = params.a_label + suffix
-            parts.append(Text(operator, font_size=40))
+            parts.append(body_text(operator, size=40))
             parts.append(
-                _labeled_box(params.result_label or default_result, ORANGE)
+                _labeled_box(params.result_label or default_result, THEME.WARN)
             )
 
         row = VGroup(*parts)

@@ -72,6 +72,57 @@ def test_component_is_registered():
     assert "TableBeat" in base.all_names()
 
 
+def test_title_uses_theme_font():
+    from manim_skill.components.table_beat import TableBeat, TableBeatParams
+    from manim_skill.components.theme import FONT_BODY
+
+    comp = TableBeat()
+    mobj = comp.build(
+        TableBeatParams(
+            headers=["Metric", "Value"],
+            rows=[["72.1", "8M"]],
+            title="Results",
+        )
+    )
+    # diagram = VGroup(table, title); title is submobjects[1]
+    title = mobj.submobjects[1]
+    assert title.font == FONT_BODY
+
+
+def test_col_labels_use_theme_font():
+    from manim_skill.components.table_beat import TableBeat, TableBeatParams
+    from manim_skill.components.theme import FONT_MONO
+
+    comp = TableBeat()
+    mobj = comp.build(
+        TableBeatParams(
+            headers=["Metric", "Value"],
+            rows=[["72.1", "8M"]],
+        )
+    )
+    table = mobj.submobjects[0]
+    col_labels = table.get_col_labels()
+    assert col_labels[0].font == FONT_MONO
+
+
+def test_grid_lines_use_rule_color():
+    from manim_skill.components.table_beat import TableBeat, TableBeatParams
+    from manim_skill.components.theme import THEME
+
+    comp = TableBeat()
+    mobj = comp.build(
+        TableBeatParams(
+            headers=["Metric", "Value"],
+            rows=[["72.1", "8M"]],
+        )
+    )
+    table = mobj.submobjects[0]
+    assert (
+        table.get_horizontal_lines()[0].get_color().to_hex().lower()
+        == THEME.RULE.lower()
+    )
+
+
 @pytest.mark.docker
 def test_table_beat_renders_in_docker(tmp_path):
     spec = SceneSpec(

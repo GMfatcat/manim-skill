@@ -65,3 +65,17 @@ def test_uniform_values_render_without_crashing():
         HeatmapBeatParams(values=[[0.5, 0.5], [0.5, 0.5]])
     )
     assert isinstance(mobj, Mobject)
+
+
+def test_heatmap_beat_uses_theme_fonts():
+    """Column labels must use FONT_MONO (label_text) after theme wiring."""
+    from manim_skill.components.theme import FONT_MONO
+
+    mobj = HeatmapBeat().build(
+        HeatmapBeatParams(values=[[0.1, 0.8]], col_labels=["x", "y"])
+    )
+    # diagram = VGroup(grid, col_group [, ...])
+    # col_group is submobjects[1]; each child is a column-label Text
+    col_group = mobj.submobjects[1]
+    first_col_label = col_group.submobjects[0]
+    assert first_col_label.font == FONT_MONO

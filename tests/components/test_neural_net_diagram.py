@@ -27,3 +27,16 @@ def test_build_with_layer_labels():
 def test_layers_requires_at_least_one():
     with pytest.raises(ValidationError):
         NeuralNetDiagramParams(layers=[])
+
+
+def test_neural_net_diagram_uses_theme_fonts():
+    """Layer labels must use FONT_MONO (label_text) after theme wiring."""
+    from manim_skill.components.theme import FONT_MONO
+
+    mobj = NeuralNetDiagram().build(
+        NeuralNetDiagramParams(layers=[2, 2], layer_labels=["in", "out"])
+    )
+    # diagram = VGroup(edges, layer_groups, label_0, label_1, ...)
+    # submobjects[2] is the first layer label Text
+    first_label = mobj.submobjects[2]
+    assert first_label.font == FONT_MONO

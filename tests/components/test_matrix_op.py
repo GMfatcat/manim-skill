@@ -28,3 +28,14 @@ def test_build_reshape_has_two_boxes_and_one_operator():
     comp = MatrixOp()
     mobj = comp.build(MatrixOpParams(op="reshape", a_label="A"))
     assert len(mobj.submobjects) == 3
+
+
+def test_matrix_op_uses_theme_fonts():
+    """Box labels must use FONT_MONO (label_text) after theme wiring."""
+    from manim_skill.components.theme import FONT_MONO
+
+    mobj = MatrixOp().build(MatrixOpParams(op="matmul"))
+    # mobj[0] = first labeled box VGroup(Rectangle, Text)
+    # mobj[0][1] = the Text label inside
+    box_label = mobj.submobjects[0].submobjects[1]
+    assert box_label.font == FONT_MONO

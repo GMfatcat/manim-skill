@@ -38,3 +38,12 @@ def test_unknown_highlight_is_ignored():
 def test_tokens_requires_at_least_one():
     with pytest.raises(ValidationError):
         AttentionFlowParams(tokens=[])
+
+
+def test_theme_font_wired():
+    from manim_skill.components.theme import FONT_BODY
+    comp = AttentionFlow()
+    mobj = comp.build(AttentionFlowParams(tokens=["The", "cat"]))
+    # diagram = VGroup(boxes); boxes[0] = VGroup(box, label)
+    label = mobj.submobjects[0].submobjects[0].submobjects[1]
+    assert label.font == FONT_BODY

@@ -92,6 +92,50 @@ def test_component_is_registered():
     assert "FormulaWalkthrough" in base.all_names()
 
 
+def test_theme_font_wired():
+    from unittest.mock import patch
+
+    from manim import Dot
+
+    from manim_skill.components.formula_walkthrough import (
+        FormulaWalkthrough,
+        FormulaWalkthroughParams,
+    )
+    from manim_skill.components.theme import FONT_BODY
+
+    with patch(
+        "manim_skill.components.formula_walkthrough.MathTex", return_value=Dot()
+    ):
+        comp = FormulaWalkthrough()
+        mobj = comp.build(
+            FormulaWalkthroughParams(segments=["x"], title="Attention Score")
+        )
+
+    # VGroup: [formula, title_text]; title_text is index 1
+    title_obj = mobj.submobjects[1]
+    assert title_obj.font == FONT_BODY
+
+
+def test_mathtex_receives_ink_color():
+    from unittest.mock import patch
+
+    from manim import Dot
+
+    from manim_skill.components.formula_walkthrough import (
+        FormulaWalkthrough,
+        FormulaWalkthroughParams,
+    )
+    from manim_skill.components.theme import THEME
+
+    with patch(
+        "manim_skill.components.formula_walkthrough.MathTex", return_value=Dot()
+    ) as mock_mathtex:
+        FormulaWalkthrough().build(FormulaWalkthroughParams(segments=["x^2"]))
+
+    mock_mathtex.assert_called_once()
+    assert mock_mathtex.call_args.kwargs.get("color") == THEME.INK
+
+
 @pytest.mark.docker
 def test_formula_walkthrough_renders_in_docker(tmp_path):
     spec = SceneSpec(

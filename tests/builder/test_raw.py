@@ -70,3 +70,18 @@ def test_exec_raw_still_raises_when_recovery_does_not_help():
     scene = FakeScene()
     with pytest.raises(SyntaxError):
         exec_raw("def(", scene)
+
+
+def test_theme_names_available_in_raw_namespace():
+    from unittest.mock import MagicMock
+    from manim_skill.builder.raw import exec_raw
+
+    scene = MagicMock()
+    # PRIMARY (a token), title_text (a factory), and FONT_MONO must resolve.
+    exec_raw(
+        "t = title_text('hi', color=PRIMARY)\n"
+        "f = FONT_MONO\n"
+        "self.add(t)",
+        scene,
+    )
+    scene.add.assert_called_once()

@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from typing import Callable
 
 from manim import (
-    BLUE,
     DOWN,
     LEFT,
     UP,
@@ -13,12 +12,12 @@ from manim import (
     Create,
     Mobject,
     Scene,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel, Field
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text, caption_text
 
 _MAX_DIAGRAM_WIDTH = 12.0
 
@@ -127,23 +126,24 @@ class FunctionPlot(Component):
             x_length=8.0,
             y_length=4.5,
             tips=False,
+            axis_config={"color": THEME.INK_SOFT},
         )
-        graph = axes.plot(fn, color=BLUE)
+        graph = axes.plot(fn, color=THEME.PRIMARY)
 
         diagram = VGroup(axes, graph)
 
         # Use Text (Pango) for axis labels — avoids requiring a host
         # LaTeX install during tests; renders fine in the container too.
         if params.x_label:
-            x_lbl = Text(params.x_label, font_size=22)
+            x_lbl = caption_text(params.x_label, size=22)
             x_lbl.next_to(axes.x_axis.get_end(), DOWN, buff=0.2)
             diagram.add(x_lbl)
         if params.y_label:
-            y_lbl = Text(params.y_label, font_size=22)
+            y_lbl = caption_text(params.y_label, size=22)
             y_lbl.next_to(axes.y_axis.get_end(), LEFT, buff=0.2)
             diagram.add(y_lbl)
         if params.title:
-            diagram.add(Text(params.title, font_size=28).next_to(axes, UP))
+            diagram.add(body_text(params.title, size=28).next_to(axes, UP))
 
         if diagram.width > _MAX_DIAGRAM_WIDTH:
             diagram.scale_to_fit_width(_MAX_DIAGRAM_WIDTH)

@@ -2,19 +2,17 @@ from __future__ import annotations
 
 from manim import (
     RIGHT,
-    WHITE,
-    YELLOW,
     Create,
     Line,
     Mobject,
     Scene,
     SurroundingRectangle,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel, Field
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text
 
 
 class AttentionFlowParams(BaseModel):
@@ -31,8 +29,8 @@ class AttentionFlow(Component):
     def build(self, params: AttentionFlowParams) -> Mobject:
         boxes = VGroup()
         for token in params.tokens:
-            label = Text(token, font_size=28)
-            box = SurroundingRectangle(label, color=WHITE, buff=0.15)
+            label = body_text(token, size=28)
+            box = SurroundingRectangle(label, color=THEME.RULE, buff=0.15)
             boxes.add(VGroup(box, label))
         boxes.arrange(RIGHT, buff=0.5)
 
@@ -51,7 +49,7 @@ class AttentionFlow(Component):
                     Line(
                         src.get_top(),
                         target.get_top(),
-                        color=YELLOW,
+                        color=THEME.PRIMARY,
                         stroke_width=3,
                         stroke_opacity=opacity,
                     )
