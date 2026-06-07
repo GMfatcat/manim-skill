@@ -9,6 +9,7 @@ from manim import DOWN, FadeIn, FadeOut, MovingCameraScene, Text
 from manim_skill.builder.camera import apply_camera
 from manim_skill.builder.raw import exec_raw
 from manim_skill.components import base as registry
+from manim_skill.components.theme import THEME, caption_text
 from manim_skill.spec.schema import Beat, SceneSpec
 from manim_skill.spec.validate import validate_spec
 
@@ -20,13 +21,8 @@ _CAPTION_MAX_WIDTH = 13.0
 
 
 def _build_caption(text: str) -> Text:
-    """Build a bottom caption Text, shrinking it to fit if too wide.
-
-    Single-line Text with no max-width clips long captions at the camera
-    edges. We keep the single-line look (no manual line breaks needed from
-    the LLM) and just scale the mobject down when it exceeds the safe width.
-    """
-    caption = Text(text, font_size=28)
+    """Build a bottom caption, in the theme body font, shrunk to fit if wide."""
+    caption = caption_text(text, size=28)
     if caption.width > _CAPTION_MAX_WIDTH:
         caption.scale_to_fit_width(_CAPTION_MAX_WIDTH)
     caption.to_edge(DOWN)
@@ -51,6 +47,7 @@ class SpecScene(MovingCameraScene):
 
     def construct(self) -> None:
         spec = load_spec_from_env()
+        self.camera.background_color = THEME.BG
         self.camera.frame.save_state()
         for beat in spec.beats:
             self._render_beat(beat)
