@@ -2,19 +2,18 @@ from __future__ import annotations
 
 from manim import (
     DOWN,
-    YELLOW,
     Create,
     FadeIn,
     Indicate,
     Mobject,
     Scene,
     Table,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel, Field, model_validator
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text, label_text
 
 _MAX_DIAGRAM_WIDTH = 12.0
 
@@ -63,16 +62,16 @@ class TableBeat(Component):
     def build(self, params: TableBeatParams) -> Mobject:
         kwargs: dict = {
             "table": params.rows,
-            "col_labels": [Text(h) for h in params.headers],
+            "col_labels": [label_text(h) for h in params.headers],
         }
         if params.row_labels:
-            kwargs["row_labels"] = [Text(r) for r in params.row_labels]
-            kwargs["top_left_entry"] = Text("")
+            kwargs["row_labels"] = [label_text(r) for r in params.row_labels]
+            kwargs["top_left_entry"] = label_text("")
         table = Table(**kwargs)
 
         diagram = VGroup(table)
         if params.title:
-            title = Text(params.title, font_size=28)
+            title = body_text(params.title, size=28)
             title.next_to(table, DOWN, buff=0.3)
             diagram.add(title)
 
@@ -94,7 +93,7 @@ class TableBeat(Component):
         for r, c in params.highlight_cells:
             try:
                 cell = table.get_cell(
-                    (r + row_offset, c + col_offset), color=YELLOW
+                    (r + row_offset, c + col_offset), color=THEME.HIGHLIGHT
                 )
                 scene.play(FadeIn(cell), run_time=0.4)
                 scene.play(Indicate(cell), run_time=0.6)
