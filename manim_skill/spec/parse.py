@@ -5,6 +5,28 @@ import re
 
 _FENCE = re.compile(r"```(?:json5?|JSON)?\s*(.*?)```", re.DOTALL)
 
+# Valid JSON string escape chars after a backslash.
+_VALID_ESCAPE_CHARS = '"\\/bfnrtu'
+# Pair each backslash with the char it escapes so an already-correct \\ is
+# consumed as one unit and never re-examined. Then double only a backslash
+# whose escape char is invalid JSON — the model under-escaping a LaTeX command
+# (\quad, \sqrt, \alpha, ...), which strict JSON rejects and json5 silently
+# DROPS. After this, strict json.loads succeeds and the command is preserved.
+# Valid escapes (\n, \t, and a correct \\frac) are left untouched. Commands
+# whose first letter is itself a valid escape (\f rac, \t imes, \b eta,
+# \n abla, \r ho) become control chars and can't be recovered here — those
+# rely on the codegen prompt. Mirrors the exec_raw \\n recovery philosophy.
+_ESCAPE_PAIR = re.compile(r"\\(.)", re.DOTALL)
+
+
+def _double_invalid_escapes(s: str) -> str:
+    return _ESCAPE_PAIR.sub(
+        lambda m: m.group(0)
+        if m.group(1) in _VALID_ESCAPE_CHARS
+        else "\\\\" + m.group(1),
+        s,
+    )
+
 
 class SpecParseError(ValueError):
     """Raised when text cannot be parsed into a spec dict."""
@@ -28,6 +50,14 @@ def parse_spec_text(text: str) -> dict:
         raise SpecParseError("no JSON object found in text")
     candidate = candidate[start : end + 1]
 
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        pass
+
+    # Recover under-escaped LaTeX backslashes, then prefer that form downstream
+    # so json5 doesn't drop them either.
+    candidate = _double_invalid_escapes(candidate)
     try:
         return json.loads(candidate)
     except json.JSONDecodeError:

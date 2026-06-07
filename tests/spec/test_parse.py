@@ -35,3 +35,35 @@ def test_parse_no_json_object_raises():
 def test_parse_unrecoverable_garbage_raises():
     with pytest.raises(SpecParseError):
         parse_spec_text('{"title": "T" "beats" oops }')
+
+
+def test_parse_recovers_single_backslash_latex():
+    # The model emitted single-backslash LaTeX commands (invalid JSON
+    # escapes). The de-tox must preserve the backslash, not drop it
+    # (json5 would silently turn "\quad" into "quad").
+    text = '{"formula": "\\quad K = \\sqrt{x} + \\alpha"}'
+    result = parse_spec_text(text)
+    assert result["formula"] == "\\quad K = \\sqrt{x} + \\alpha"
+
+
+def test_parse_leaves_double_backslash_latex_unchanged():
+    # Correctly double-escaped LaTeX must decode to a single backslash.
+    text = '{"formula": "\\\\frac{a}{b}"}'
+    assert parse_spec_text(text)["formula"] == "\\frac{a}{b}"
+
+
+def test_parse_detox_keeps_correct_double_escapes_when_repairing_others():
+    # A formula mixing a CORRECT \\sqrt with an under-escaped \quad (exactly
+    # the model's observed behavior). Repairing the \quad must NOT corrupt the
+    # already-correct \\sqrt into \\\sqrt.
+    text = '{"formula": "\\\\sqrt{x} \\quad y"}'
+    assert parse_spec_text(text)["formula"] == "\\sqrt{x} \\quad y"
+
+
+def test_parse_detox_preserves_valid_newline_escape():
+    # A lone "\quad" forces the de-tox path; a legitimate "\n" elsewhere must
+    # stay a real newline (not get doubled into a literal backslash-n).
+    text = '{"formula": "\\quad", "caption": "a\\nb"}'
+    result = parse_spec_text(text)
+    assert result["formula"] == "\\quad"
+    assert result["caption"] == "a\nb"
