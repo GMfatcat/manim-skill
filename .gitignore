@@ -10,3 +10,12 @@ tests/realworld-test/out/
 tests/realworld-test/mHC.txt
 tests/realworld-test/key.txt
 dlm-polish/out/
+
+# API keys (never commit)
+openrouter-key.txt
+*-key.txt
+*.key
+
+# eval / scratch output and crash dumps
+out/
+*.stackdump
