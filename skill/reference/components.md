@@ -375,12 +375,12 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
       "title": "Title"
     },
     "low_color": {
-      "default": "BLUE",
+      "default": "#34597A",
       "title": "Low Color",
       "type": "string"
     },
     "high_color": {
-      "default": "RED",
+      "default": "#9A3B2E",
       "title": "High Color",
       "type": "string"
     }
