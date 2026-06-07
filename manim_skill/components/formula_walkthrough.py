@@ -54,7 +54,7 @@ class FormulaWalkthrough(Component):
     Params = FormulaWalkthroughParams
 
     def build(self, params: FormulaWalkthroughParams) -> Mobject:
-        formula = MathTex(*params.segments)
+        formula = MathTex(*params.segments, color=THEME.INK)
         group = VGroup(formula)
         if params.title:
             group.add(body_text(params.title, size=28).next_to(formula, DOWN))
