@@ -69,6 +69,8 @@ themes everything, so do NOT fight it:
   (title_text(...), body_text(...), caption_text(...), label_text(...))
   instead of hardcoded colors/fonts. DO NOT set a background — the builder
   already applies the themed background.
+- Layout helpers are also in scope for raw beats: wrap your top mobject with
+  safe_area(...) to keep it on-screen, and stack([...]) to space items.
 
 Output ONLY the JSON object, nothing else.
 
@@ -94,12 +96,17 @@ def generate_spec(
 
     One LLM call; on a parse or validation failure, re-ask once with
     the error fed back. If the second attempt still fails, raise
-    CodegenError.
+    CodegenError.  After obtaining a valid spec, run advisory lint; if
+    warnings are found, do one additional re-ask and return the improved
+    spec (or fall back to the first valid spec if the re-ask fails).
     """
+    from manim_skill.spec.lint import lint_spec
+
     system = _CODEGEN_SYSTEM.replace("__CATALOG__", catalog)
     base_user = _build_user_prompt(concept)
 
     last_error = ""
+    valid_spec: SceneSpec | None = None
     for attempt in range(2):
         if attempt == 0:
             user = base_user
@@ -111,11 +118,31 @@ def generate_spec(
             )
         raw = client.complete(system, user)
         try:
-            return validate_spec(parse_spec_text(raw))
+            valid_spec = validate_spec(parse_spec_text(raw))
+            break
         except (SpecParseError, SpecValidationError) as exc:
             last_error = str(exc)
 
-    raise CodegenError(
-        f"codegen failed for concept {concept.concept!r} after 2 "
-        f"attempts: {last_error}"
-    )
+    if valid_spec is None:
+        raise CodegenError(
+            f"codegen failed for concept {concept.concept!r} after 2 "
+            f"attempts: {last_error}"
+        )
+
+    warnings = lint_spec(valid_spec)
+    if warnings:
+        issues = "; ".join(
+            f"beat {w.beat_index}: {w.message}" for w in warnings
+        )
+        lint_user = (
+            f"{base_user}\n\nYour scene spec is valid but has these issues: "
+            f"{issues}\nReturn a cleaner scene spec JSON that fixes them, "
+            "nothing else."
+        )
+        raw = client.complete(system, lint_user)
+        try:
+            return validate_spec(parse_spec_text(raw))
+        except (SpecParseError, SpecValidationError):
+            return valid_spec
+
+    return valid_spec

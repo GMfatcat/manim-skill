@@ -53,6 +53,10 @@ def _cmd_validate(args) -> int:
         print(f"INVALID: {exc}", file=sys.stderr)
         return 1
     print(f"OK: {len(spec.beats)} beat(s), title={spec.title!r}")
+    from manim_skill.spec.lint import lint_spec
+
+    for w in lint_spec(spec):
+        print(f"  warning: beat {w.beat_index}: {w.code} — {w.message}", file=sys.stderr)
     return 0
 
 

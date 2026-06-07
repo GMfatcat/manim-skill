@@ -51,3 +51,17 @@ def test_cli_render_produces_output(tmp_path):
     zip_path = Path(zip_line.split("zip:", 1)[1].strip())
     assert zip_path.exists()
     assert zip_path.stat().st_size > 0
+
+
+def test_validate_prints_lint_warnings_but_exits_zero(tmp_path, capsys):
+    import json
+    from manim_skill.cli import main
+
+    spec = {"title": "t", "aspect_ratio": "16:9", "beats": [{"component": "TextBeat", "params": {"text": "x"}, "caption": "w " * 40}]}
+    p = tmp_path / "spec.json"
+    p.write_text(json.dumps(spec), encoding="utf-8")
+
+    rc = main(["validate", str(p)])
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "caption_too_long" in (captured.out + captured.err)
