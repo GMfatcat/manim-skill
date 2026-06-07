@@ -27,3 +27,11 @@ def test_bullets_style_builds_header_plus_one_per_bullet():
     )
     texts = [m for m in mobj if isinstance(m, Text)]
     assert len(texts) == 4  # header + 3 bullets
+
+
+def test_textbeat_uses_theme_display_font():
+    from manim_skill.components.theme import FONT_DISPLAY
+    comp = TextBeat()
+    mobj = comp.build(TextBeatParams(text="Hello", style="title"))
+    texts = [m for m in mobj if isinstance(m, Text)]
+    assert texts and all(t.font == FONT_DISPLAY for t in texts)

@@ -6,6 +6,7 @@ from manim import DOWN, LEFT, FadeIn, Mobject, Scene, Text, VGroup
 from pydantic import BaseModel, Field
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import title_text
 
 
 class TextBeatParams(BaseModel):
@@ -23,15 +24,15 @@ class TextBeat(Component):
     def build(self, params: TextBeatParams) -> Mobject:
         group = VGroup()
         if params.style == "bullets":
-            group.add(Text(params.text, font_size=44))
+            group.add(title_text(params.text, size=44))
             for bullet in params.bullets:
-                group.add(Text(f"• {bullet}", font_size=32))
+                group.add(title_text(f"• {bullet}", size=32))
             group.arrange(DOWN, aligned_edge=LEFT, buff=0.4)
         else:
             header_size = 56 if params.style == "title" else 36
-            group.add(Text(params.text, font_size=header_size))
+            group.add(title_text(params.text, size=header_size))
             if params.subtitle:
-                group.add(Text(params.subtitle, font_size=32))
+                group.add(title_text(params.subtitle, size=32))
             group.arrange(DOWN, buff=0.4)
         return group
 
