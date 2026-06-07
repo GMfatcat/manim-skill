@@ -614,6 +614,45 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "type": "object"
 }
 
+### SectionDivider
+{
+  "properties": {
+    "number": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Number"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "subtitle": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subtitle"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "SectionDividerParams",
+  "type": "object"
+}
+
 ### TableBeat
 {
   "properties": {
@@ -718,5 +757,91 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "type": "object"
 }
 
+### TokenSequence
+{
+  "$defs": {
+    "Token": {
+      "properties": {
+        "text": {
+          "default": "",
+          "title": "Text",
+          "type": "string"
+        },
+        "state": {
+          "default": "normal",
+          "enum": [
+            "normal",
+            "masked",
+            "expand",
+            "delete",
+            "defer"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "title": "Token",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "tokens": {
+      "items": {
+        "$ref": "#/$defs/Token"
+      },
+      "title": "Tokens",
+      "type": "array"
+    }
+  },
+  "title": "TokenSequenceParams",
+  "type": "object"
+}
+
+### TwoColumn
+{
+  "properties": {
+    "left_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Left Title"
+    },
+    "right_title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Right Title"
+    },
+    "left": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Left",
+      "type": "array"
+    },
+    "right": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Right",
+      "type": "array"
+    }
+  },
+  "title": "TwoColumnParams",
+  "type": "object"
+}
+
 ### (raw-beat theme names)
-Available in raw beats: colors PRIMARY, PRIMARY_SOFT, INK, INK_SOFT, INK_FAINT, WARN, HIGHLIGHT, BG, BG_CARD, BG_CODE, RULE; fonts FONT_DISPLAY, FONT_BODY, FONT_MONO; factories title_text, body_text, caption_text, label_text.
+Available in raw beats: colors PRIMARY, PRIMARY_SOFT, INK, INK_SOFT, INK_FAINT, WARN, HIGHLIGHT, BG, BG_CARD, BG_CODE, RULE; fonts FONT_DISPLAY, FONT_BODY, FONT_MONO; factories title_text, body_text, caption_text, label_text. Layout helpers: safe_area, stack, fit_width.

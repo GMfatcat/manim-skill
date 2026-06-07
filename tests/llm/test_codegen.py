@@ -144,3 +144,10 @@ def test_lint_reask_falls_back_to_first_valid_when_second_invalid():
     spec = generate_spec(client, _CONCEPT, catalog="(catalog)")
     assert len(client.calls) == 2
     assert spec.beats[0].caption.startswith("word")
+
+
+def test_prompt_mentions_layout_helpers():
+    client = FakeLLMClient(response=_VALID_SPEC)
+    generate_spec(client, _CONCEPT, catalog="(catalog)")
+    system = client.calls[0][0]
+    assert "safe_area" in system or "stack(" in system

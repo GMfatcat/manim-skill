@@ -69,6 +69,8 @@ themes everything, so do NOT fight it:
   (title_text(...), body_text(...), caption_text(...), label_text(...))
   instead of hardcoded colors/fonts. DO NOT set a background — the builder
   already applies the themed background.
+- Layout helpers are also in scope for raw beats: wrap your top mobject with
+  safe_area(...) to keep it on-screen, and stack([...]) to space items.
 
 Output ONLY the JSON object, nothing else.
 

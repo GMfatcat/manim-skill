@@ -85,3 +85,12 @@ def test_theme_names_available_in_raw_namespace():
         scene,
     )
     scene.add.assert_called_once()
+
+
+def test_layout_helpers_available_in_raw_namespace():
+    from unittest.mock import MagicMock
+    from manim_skill.builder.raw import exec_raw
+
+    scene = MagicMock()
+    exec_raw("sq = Square()\nsafe_area(sq)\nstack([sq])\nfit_width(sq, 5)\nself.add(sq)", scene)
+    scene.add.assert_called_once()
