@@ -14,6 +14,16 @@ _VALID_SPEC = (
 )
 
 
+class _ScriptedClient:
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self.calls = []
+
+    def complete(self, system, user):
+        self.calls.append((system, user))
+        return self._responses.pop(0)
+
+
 def test_generate_spec_valid_first_try():
     client = FakeLLMClient(response=_VALID_SPEC)
     spec = generate_spec(client, _CONCEPT, catalog="(catalog)")
@@ -115,3 +125,22 @@ def test_codegen_system_prompt_includes_visual_rules():
     # use the theme colors / factories in raw beats
     assert "theme" in s
     assert "title_text" in system or "PRIMARY" in system
+
+
+def test_lint_warning_triggers_one_reask_and_returns_clean_spec():
+    long_caption = "word " * 40
+    linty = '{"title":"D","aspect_ratio":"16:9","beats":[{"component":"TextBeat","params":{"text":"x"},"caption":"' + long_caption + '"}]}'
+    clean = '{"title":"D","aspect_ratio":"16:9","beats":[{"component":"TextBeat","params":{"text":"x"},"caption":"short"}]}'
+    client = _ScriptedClient([linty, clean])
+    spec = generate_spec(client, _CONCEPT, catalog="(catalog)")
+    assert len(client.calls) == 2
+    assert spec.beats[0].caption == "short"
+
+
+def test_lint_reask_falls_back_to_first_valid_when_second_invalid():
+    long_caption = "word " * 40
+    linty = '{"title":"D","aspect_ratio":"16:9","beats":[{"component":"TextBeat","params":{"text":"x"},"caption":"' + long_caption + '"}]}'
+    client = _ScriptedClient([linty, "not json at all"])
+    spec = generate_spec(client, _CONCEPT, catalog="(catalog)")
+    assert len(client.calls) == 2
+    assert spec.beats[0].caption.startswith("word")
