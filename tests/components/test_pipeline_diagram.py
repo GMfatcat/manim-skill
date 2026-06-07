@@ -58,3 +58,33 @@ def test_diagram_fits_camera_width_with_long_title():
         PipelineDiagramParams(stages=["a", "b", "c"], title=long_title)
     )
     assert mobj.width <= 12.0
+
+
+def test_stage_label_uses_theme_font():
+    from manim_skill.components.theme import FONT_MONO
+
+    comp = PipelineDiagram()
+    mobj = comp.build(PipelineDiagramParams(stages=["load", "train"]))
+    # mobj[0] = boxes VGroup; boxes[0] = VGroup(box, label); label = boxes[0][1]
+    label = mobj.submobjects[0].submobjects[0].submobjects[1]
+    assert label.font == FONT_MONO
+
+
+def test_box_border_uses_primary_color():
+    from manim_skill.components.theme import THEME
+
+    comp = PipelineDiagram()
+    mobj = comp.build(PipelineDiagramParams(stages=["load"]))
+    # mobj[0] = boxes VGroup; boxes[0] = VGroup(box, label); box = boxes[0][0]
+    box = mobj.submobjects[0].submobjects[0].submobjects[0]
+    assert box.get_color().to_hex().lower() == THEME.PRIMARY.lower()
+
+
+def test_title_uses_theme_font():
+    from manim_skill.components.theme import FONT_BODY
+
+    comp = PipelineDiagram()
+    mobj = comp.build(PipelineDiagramParams(stages=["a", "b"], title="My Pipeline"))
+    # diagram = VGroup(boxes, arrows, title); title is submobjects[2]
+    title = mobj.submobjects[2]
+    assert title.font == FONT_BODY

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from manim import (
-    BLUE,
     RIGHT,
     UP,
     Arrow,
@@ -9,12 +8,12 @@ from manim import (
     Mobject,
     RoundedRectangle,
     Scene,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel, Field
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text, label_text
 
 
 class PipelineDiagramParams(BaseModel):
@@ -30,15 +29,15 @@ class PipelineDiagram(Component):
     def build(self, params: PipelineDiagramParams) -> Mobject:
         boxes = VGroup()
         for stage in params.stages:
-            label = Text(stage, font_size=24)
+            lbl = label_text(stage, size=24)
             box = RoundedRectangle(
                 corner_radius=0.15,
-                width=max(1.5, label.width + 0.4),
+                width=max(1.5, lbl.width + 0.4),
                 height=1.0,
-                color=BLUE,
+                color=THEME.PRIMARY,
             )
-            label.move_to(box)
-            boxes.add(VGroup(box, label))
+            lbl.move_to(box)
+            boxes.add(VGroup(box, lbl))
         boxes.arrange(RIGHT, buff=1.0)
 
         arrows = VGroup()
@@ -48,7 +47,7 @@ class PipelineDiagram(Component):
         diagram = VGroup(boxes, arrows)
         if params.title:
             diagram.add(
-                Text(params.title, font_size=28).next_to(diagram, UP)
+                body_text(params.title, size=28).next_to(diagram, UP)
             )
         # Auto-fit to camera width (16:9 frame is 14.22 units; target safe 12.0).
         if diagram.width > 12.0:
