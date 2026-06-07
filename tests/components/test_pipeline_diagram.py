@@ -80,6 +80,16 @@ def test_box_border_uses_primary_color():
     assert box.get_color().to_hex().lower() == THEME.PRIMARY.lower()
 
 
+def test_arrow_uses_ink_soft_color():
+    from manim_skill.components.theme import THEME
+
+    comp = PipelineDiagram()
+    mobj = comp.build(PipelineDiagramParams(stages=["load", "train"]))
+    # mobj[1] = arrows VGroup; arrows[0] = first Arrow
+    arrow = mobj.submobjects[1].submobjects[0]
+    assert arrow.get_color().to_hex().lower() == THEME.INK_SOFT.lower()
+
+
 def test_title_uses_theme_font():
     from manim_skill.components.theme import FONT_BODY
 

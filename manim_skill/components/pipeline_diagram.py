@@ -42,7 +42,7 @@ class PipelineDiagram(Component):
 
         arrows = VGroup()
         for left, right in zip(boxes[:-1], boxes[1:]):
-            arrows.add(Arrow(left.get_right(), right.get_left(), buff=0.1))
+            arrows.add(Arrow(left.get_right(), right.get_left(), buff=0.1, color=THEME.INK_SOFT))
 
         diagram = VGroup(boxes, arrows)
         if params.title:
