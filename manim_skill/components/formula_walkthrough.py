@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from manim import (
     DOWN,
-    YELLOW,
     Create,
     FadeIn,
     FadeOut,
@@ -10,13 +9,13 @@ from manim import (
     Mobject,
     Scene,
     SurroundingRectangle,
-    Text,
     VGroup,
     Write,
 )
 from pydantic import BaseModel, Field, model_validator
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text, caption_text
 
 _BEAT_PAUSE = 1.2
 
@@ -58,7 +57,7 @@ class FormulaWalkthrough(Component):
         formula = MathTex(*params.segments)
         group = VGroup(formula)
         if params.title:
-            group.add(Text(params.title, font_size=28).next_to(formula, DOWN))
+            group.add(body_text(params.title, size=28).next_to(formula, DOWN))
         return group
 
     def animate(
@@ -73,11 +72,11 @@ class FormulaWalkthrough(Component):
 
         for step in params.steps:
             parts = VGroup(*[formula[i] for i in step.indices])
-            box = SurroundingRectangle(parts, color=YELLOW, buff=0.08)
+            box = SurroundingRectangle(parts, color=THEME.PRIMARY, buff=0.08)
             mobjs_to_play = [Create(box)]
             caption_mobj = None
             if step.caption:
-                caption_mobj = Text(step.caption, font_size=24)
+                caption_mobj = caption_text(step.caption, size=24)
                 caption_mobj.next_to(formula, DOWN, buff=0.6)
                 mobjs_to_play.append(FadeIn(caption_mobj))
             scene.play(*mobjs_to_play)
