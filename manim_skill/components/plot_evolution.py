@@ -29,6 +29,7 @@ class PlotEvolution(Component):
             y_range=[y_min, y_max, (y_max - y_min) / 5],
             x_length=8,
             y_length=4.5,
+            axis_config={"color": THEME.INK_SOFT},
         )
         graph = axes.plot_line_graph(
             x_values=list(range(n)),
