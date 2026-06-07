@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import manim
+from manim_skill.components import theme as _theme
 
 
 def _compile_raw(code: str):
@@ -38,4 +39,14 @@ def exec_raw(code: str, scene: Any) -> None:
     namespace: dict[str, Any] = {"self": scene, "scene": scene}
     for name in getattr(manim, "__all__", dir(manim)):
         namespace[name] = getattr(manim, name)
+    for _name in (
+        "THEME",
+        "FONT_DISPLAY", "FONT_BODY", "FONT_MONO",
+        "GAP", "MARGIN",
+        "title_text", "body_text", "caption_text", "label_text",
+    ):
+        namespace[_name] = getattr(_theme, _name)
+    # the active theme's color tokens, by their semantic names:
+    for _token, _value in vars(_theme.THEME).items():
+        namespace[_token] = _value
     exec(_compile_raw(code), namespace)
