@@ -129,6 +129,18 @@ def test_x_range_must_have_2_or_3_entries():
         )
 
 
+def test_axes_use_ink_soft_color():
+    from manim_skill.components.theme import THEME
+
+    comp = FunctionPlot()
+    mobj = comp.build(
+        FunctionPlotParams(expression="x", x_range=[-2, 2, 1], y_range=[-2, 2, 1])
+    )
+    # diagram = VGroup(axes, graph [, labels, title]); axes is submobjects[0]
+    axes = mobj.submobjects[0]
+    assert axes.get_x_axis().get_color().to_hex().lower() == THEME.INK_SOFT.lower()
+
+
 def test_theme_font_wired():
     from manim_skill.components.theme import FONT_BODY
 
