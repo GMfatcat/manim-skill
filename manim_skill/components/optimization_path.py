@@ -108,7 +108,7 @@ class OptimizationPath(Component):
 
         # TracedPath leaves a yellow trail behind the dot as it walks
         # toward the minimum.
-        trace = TracedPath(dot.get_center, stroke_color=THEME.HIGHLIGHT, stroke_width=4)
+        trace = TracedPath(dot.get_center, stroke_color=THEME.WARN, stroke_width=4)
         scene.add(trace)
 
         for i in range(1, params.n_steps + 1):

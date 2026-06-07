@@ -41,14 +41,14 @@ class MatrixOp(Component):
             parts.append(body_text("x", size=40))
             parts.append(_labeled_box(params.b_label or "B", THEME.PRIMARY_SOFT))
             parts.append(body_text("=", size=40))
-            parts.append(_labeled_box(params.result_label or "C", THEME.HIGHLIGHT))
+            parts.append(_labeled_box(params.result_label or "C", THEME.WARN))
         else:
             operator = "T" if params.op == "transpose" else "->"
             suffix = "_T" if params.op == "transpose" else "'"
             default_result = params.a_label + suffix
             parts.append(body_text(operator, size=40))
             parts.append(
-                _labeled_box(params.result_label or default_result, THEME.HIGHLIGHT)
+                _labeled_box(params.result_label or default_result, THEME.WARN)
             )
 
         row = VGroup(*parts)
