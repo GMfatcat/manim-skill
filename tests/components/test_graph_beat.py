@@ -61,6 +61,18 @@ def test_component_is_registered():
     assert "GraphBeat" in base.all_names()
 
 
+def test_graph_beat_uses_theme_fonts():
+    """Node labels must use FONT_MONO (label_text) after theme wiring."""
+    from manim_skill.components.graph_beat import GraphBeat, GraphBeatParams
+    from manim_skill.components.theme import FONT_MONO
+
+    mobj = GraphBeat().build(GraphBeatParams(nodes=["A", "B"], edges=[["A", "B"]]))
+    # diagram = VGroup(graph, external_labels [, title])
+    # external_labels is submobjects[1]; each child is a label Text
+    first_label = mobj.submobjects[1].submobjects[0]
+    assert first_label.font == FONT_MONO
+
+
 @pytest.mark.docker
 def test_graph_beat_renders_in_docker(tmp_path):
     spec = SceneSpec(

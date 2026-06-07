@@ -5,18 +5,17 @@ from typing import Literal
 from manim import (
     DOWN,
     UP,
-    WHITE,
     DiGraph,
     Create,
     Graph,
     Mobject,
     Scene,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel, Field, model_validator
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, body_text, label_text
 
 _MAX_DIAGRAM_WIDTH = 12.0
 _MAX_DIAGRAM_HEIGHT = 6.5  # camera is 8 tall; leave room for title + caption
@@ -72,7 +71,7 @@ class GraphBeat(Component):
             vertices=list(params.nodes),
             edges=edges,
             labels=False,
-            vertex_config={"radius": 0.18, "color": WHITE},
+            vertex_config={"radius": 0.18, "color": THEME.PRIMARY},
             layout_scale=3.5,
             **_layout_kwargs(params.layout, params.nodes, edges),
         )
@@ -80,13 +79,13 @@ class GraphBeat(Component):
         external_labels = VGroup()
         for name in params.nodes:
             vertex = graph.vertices[name]
-            label = Text(name, font_size=20)
-            label.next_to(vertex, UP, buff=0.1)
-            external_labels.add(label)
+            lbl = label_text(name, size=20)
+            lbl.next_to(vertex, UP, buff=0.1)
+            external_labels.add(lbl)
 
         diagram = VGroup(graph, external_labels)
         if params.title:
-            title = Text(params.title, font_size=28)
+            title = body_text(params.title, size=28)
             title.next_to(diagram, DOWN, buff=0.4)
             diagram.add(title)
 
