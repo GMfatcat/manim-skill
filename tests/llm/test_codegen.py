@@ -99,3 +99,19 @@ def test_codegen_system_prompt_includes_raw_beat_guards():
         or "other beat" in system.lower()
         or "another beat" in system.lower()
     )
+
+
+def test_codegen_system_prompt_includes_visual_rules():
+    """Lock in the dlm-polish-derived visual guardrails for a weak model."""
+    client = FakeLLMClient(response=_VALID_SPEC)
+    generate_spec(client, _CONCEPT, catalog="(catalog)")
+    system = client.calls[0][0]
+    s = system.lower()
+
+    # no italics
+    assert "italic" in s
+    # keep captions short
+    assert "caption" in s and ("short" in s or "few words" in s)
+    # use the theme colors / factories in raw beats
+    assert "theme" in s
+    assert "title_text" in system or "PRIMARY" in system

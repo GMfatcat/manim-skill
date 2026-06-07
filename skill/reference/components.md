@@ -717,3 +717,6 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "title": "TextBeatParams",
   "type": "object"
 }
+
+### (raw-beat theme names)
+Available in raw beats: colors PRIMARY, PRIMARY_SOFT, INK, INK_SOFT, INK_FAINT, WARN, HIGHLIGHT, BG, BG_CARD, BG_CODE, RULE; fonts FONT_DISPLAY, FONT_BODY, FONT_MONO; factories title_text, body_text, caption_text, label_text.

@@ -59,6 +59,17 @@ LaTeX-bearing param. The same over-escape mistake hits LaTeX backslashes:
 Correct:  "formula": "\\\\frac{Q K^T}{\\\\sqrt{d_k}}"
 Wrong:    "formula": "\\\\\\\\frac{Q K^T}{\\\\\\\\sqrt{d_k}}"
 
+VISUAL RULES — keep output clean for a small model; the framework already
+themes everything, so do NOT fight it:
+- DO NOT use italics anywhere.
+- Keep each beat's "caption" short — a few words, not a sentence.
+- DO NOT pack many lines of text into one beat. Fewer elements, more space.
+- In raw beats, the theme is in scope: use the semantic colors (PRIMARY,
+  INK, INK_SOFT, WARN, HIGHLIGHT, ...) and the text factories
+  (title_text(...), body_text(...), caption_text(...), label_text(...))
+  instead of hardcoded colors/fonts. DO NOT set a background — the builder
+  already applies the themed background.
+
 Output ONLY the JSON object, nothing else.
 
 COMPONENT CATALOG:
