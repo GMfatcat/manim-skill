@@ -5,18 +5,27 @@ import re
 
 _FENCE = re.compile(r"```(?:json5?|JSON)?\s*(.*?)```", re.DOTALL)
 
-# A backslash NOT followed by a valid JSON escape char (" \ / b f n r t u).
-# Such a lone backslash is the model under-escaping a LaTeX command
-# (\quad, \sqrt, \alpha, ...); strict JSON rejects it and json5 silently
-# DROPS the backslash. Doubling it before re-parsing preserves the command.
-# Valid escapes (\n, \t, \\frac's \\, ...) are left untouched. Commands whose
-# first letter is itself a valid escape (\f rac, \t imes, \b eta, \n abla,
-# \r ho) can't be recovered this way — those rely on the codegen prompt.
-_INVALID_ESCAPE = re.compile(r'\\(?![\"\\/bfnrtu])')
+# Valid JSON string escape chars after a backslash.
+_VALID_ESCAPE_CHARS = '"\\/bfnrtu'
+# Pair each backslash with the char it escapes so an already-correct \\ is
+# consumed as one unit and never re-examined. Then double only a backslash
+# whose escape char is invalid JSON — the model under-escaping a LaTeX command
+# (\quad, \sqrt, \alpha, ...), which strict JSON rejects and json5 silently
+# DROPS. After this, strict json.loads succeeds and the command is preserved.
+# Valid escapes (\n, \t, and a correct \\frac) are left untouched. Commands
+# whose first letter is itself a valid escape (\f rac, \t imes, \b eta,
+# \n abla, \r ho) become control chars and can't be recovered here — those
+# rely on the codegen prompt. Mirrors the exec_raw \\n recovery philosophy.
+_ESCAPE_PAIR = re.compile(r"\\(.)", re.DOTALL)
 
 
 def _double_invalid_escapes(s: str) -> str:
-    return _INVALID_ESCAPE.sub(r"\\\\", s)
+    return _ESCAPE_PAIR.sub(
+        lambda m: m.group(0)
+        if m.group(1) in _VALID_ESCAPE_CHARS
+        else "\\\\" + m.group(1),
+        s,
+    )
 
 
 class SpecParseError(ValueError):

@@ -52,6 +52,14 @@ def test_parse_leaves_double_backslash_latex_unchanged():
     assert parse_spec_text(text)["formula"] == "\\frac{a}{b}"
 
 
+def test_parse_detox_keeps_correct_double_escapes_when_repairing_others():
+    # A formula mixing a CORRECT \\sqrt with an under-escaped \quad (exactly
+    # the model's observed behavior). Repairing the \quad must NOT corrupt the
+    # already-correct \\sqrt into \\\sqrt.
+    text = '{"formula": "\\\\sqrt{x} \\quad y"}'
+    assert parse_spec_text(text)["formula"] == "\\sqrt{x} \\quad y"
+
+
 def test_parse_detox_preserves_valid_newline_escape():
     # A lone "\quad" forces the de-tox path; a legitimate "\n" elsewhere must
     # stay a real newline (not get doubled into a literal backslash-n).
