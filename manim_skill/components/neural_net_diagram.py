@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from manim import (
-    BLUE,
     DOWN,
     RIGHT,
     UP,
@@ -10,12 +9,12 @@ from manim import (
     Line,
     Mobject,
     Scene,
-    Text,
     VGroup,
 )
 from pydantic import BaseModel, Field
 
 from manim_skill.components.base import Component, register
+from manim_skill.components.theme import THEME, label_text
 
 
 class NeuralNetDiagramParams(BaseModel):
@@ -32,7 +31,7 @@ class NeuralNetDiagram(Component):
         layer_groups = VGroup()
         for count in params.layers:
             nodes = VGroup(
-                *[Circle(radius=0.18, color=BLUE) for _ in range(count)]
+                *[Circle(radius=0.18, color=THEME.PRIMARY) for _ in range(count)]
             )
             nodes.arrange(DOWN, buff=0.3)
             layer_groups.add(nodes)
@@ -47,14 +46,15 @@ class NeuralNetDiagram(Component):
                             node_a.get_center(),
                             node_b.get_center(),
                             stroke_width=1,
+                            stroke_color=THEME.RULE,
                             stroke_opacity=0.4,
                         )
                     )
 
         diagram = VGroup(edges, layer_groups)
 
-        for group, label in zip(layer_groups, params.layer_labels):
-            diagram.add(Text(label, font_size=24).next_to(group, UP))
+        for group, lbl_str in zip(layer_groups, params.layer_labels):
+            diagram.add(label_text(lbl_str, size=24).next_to(group, UP))
 
         return diagram
 
