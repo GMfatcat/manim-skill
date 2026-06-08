@@ -169,3 +169,20 @@ def test_codegen_prompt_warns_about_over_escaping_text_commands():
     generate_spec(client, _CONCEPT, catalog="(catalog)")
     system = client.calls[0][0]
     assert "mathbf" in system
+
+
+def test_latex_suspicious_formula_triggers_one_reask():
+    import json
+
+    bad = json.dumps({
+        "title": "D", "aspect_ratio": "16:9",
+        "beats": [{"component": "FormulaBreakdown", "params": {"formula": "\\\\mathbf{x}"}}],
+    })
+    clean = json.dumps({
+        "title": "D", "aspect_ratio": "16:9",
+        "beats": [{"component": "FormulaBreakdown", "params": {"formula": "\\mathbf{x}"}}],
+    })
+    client = FakeLLMClient(responses=[bad, clean])
+    spec = generate_spec(client, _CONCEPT, catalog="(catalog)")
+    assert len(client.calls) == 2  # valid-but-suspicious, then the lint re-ask
+    assert spec.beats[0].params["formula"] == "\\mathbf{x}"
