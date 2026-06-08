@@ -18,6 +18,18 @@ _COMMANDS = frozenset({
     "rho", "sigma", "tau", "phi", "chi", "psi", "omega",
     "Gamma", "Delta", "Theta", "Lambda", "Xi", "Pi", "Sigma", "Phi",
     "Psi", "Omega",
+    # arrows / relations
+    "rightarrow", "leftarrow", "Rightarrow", "Leftarrow", "leftrightarrow",
+    "to", "mapsto", "implies", "leq", "geq", "neq", "approx", "equiv",
+    "propto", "sim", "cong",
+    # dots
+    "cdots", "ldots", "dots", "vdots", "ddots",
+    # delimiters
+    "left", "right", "langle", "rangle", "lfloor", "rfloor", "lceil", "rceil",
+    # accents / styling
+    "hat", "bar", "vec", "tilde", "overline", "boldsymbol",
+    # operators
+    "log", "exp", "sin", "cos", "tan", "max", "min", "arg", "det", "dim",
 })
 
 # Longest-first so e.g. "qquad" is tried before "quad", "varepsilon" before
