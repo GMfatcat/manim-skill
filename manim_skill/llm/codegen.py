@@ -59,6 +59,9 @@ LaTeX-bearing param. The same over-escape mistake hits LaTeX backslashes:
   \\; — they are NOT exempt. Write \\\\quad, never a lone \\quad: a single
   backslash is dropped when the JSON is decoded and \\quad renders as the
   literal word "quad".
+- Text-formatting commands too: \\mathbf, \\mathrm, \\text. Use EXACTLY one
+  doubling — \\\\mathbf (four backslashes) decodes to \\mathbf, which LaTeX
+  reads as a line break plus the literal word "mathbf", not bold text.
 
 Correct:  "formula": "\\\\frac{Q K^T}{\\\\sqrt{d_k}}" or "a \\\\quad b"
 Wrong:    "formula": "\\\\\\\\frac{Q K^T}{\\\\\\\\sqrt{d_k}}"

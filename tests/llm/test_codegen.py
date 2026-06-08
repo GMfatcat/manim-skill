@@ -161,3 +161,11 @@ def test_codegen_prompt_warns_about_spacing_command_backslashes():
     assert "quad" in system
     assert "spacing" in system.lower()
     assert r"\\quad" in system  # the correctly double-escaped JSON form is shown
+
+
+def test_codegen_prompt_warns_about_over_escaping_text_commands():
+    r"""Lock in the \mathbf over-escape guidance (phase-2 eval v2 miss)."""
+    client = FakeLLMClient(response=_VALID_SPEC)
+    generate_spec(client, _CONCEPT, catalog="(catalog)")
+    system = client.calls[0][0]
+    assert "mathbf" in system
