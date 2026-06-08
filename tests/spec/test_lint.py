@@ -35,3 +35,30 @@ def test_lint_never_raises_on_empty_beats():
     # SceneSpec enforces min_length=1, so use model_construct to verify
     # lint_spec is robust even if called with a spec that has no beats.
     assert lint_spec(SceneSpec.model_construct(title="t", beats=[])) == []
+
+
+def test_glued_overescape_formula_warns():
+    spec = _spec(
+        [Beat(component="FormulaBreakdown", params={"formula": "\\\\mathbf{x}"})]
+    )
+    codes = [w.code for w in lint_spec(spec)]
+    assert "latex_suspicious" in codes
+
+
+def test_clean_formula_no_latex_warning():
+    spec = _spec(
+        [Beat(component="FormulaBreakdown", params={"formula": "\\frac{a}{b}"})]
+    )
+    assert "latex_suspicious" not in [w.code for w in lint_spec(spec)]
+
+
+def test_walkthrough_segment_overescape_warns():
+    spec = _spec(
+        [
+            Beat(
+                component="FormulaWalkthrough",
+                params={"segments": ["\\frac{a}{b}", "\\\\mathbf{x}"]},
+            )
+        ]
+    )
+    assert "latex_suspicious" in [w.code for w in lint_spec(spec)]

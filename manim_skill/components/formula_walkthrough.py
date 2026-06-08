@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from manim_skill.components.base import Component, register
 from manim_skill.components.theme import THEME, body_text, caption_text
+from manim_skill.spec.latex import repair_latex
 
 _BEAT_PAUSE = 1.2
 
@@ -54,7 +55,9 @@ class FormulaWalkthrough(Component):
     Params = FormulaWalkthroughParams
 
     def build(self, params: FormulaWalkthroughParams) -> Mobject:
-        formula = MathTex(*params.segments, color=THEME.INK)
+        formula = MathTex(
+            *[repair_latex(s) for s in params.segments], color=THEME.INK
+        )
         group = VGroup(formula)
         if params.title:
             group.add(body_text(params.title, size=28).next_to(formula, DOWN))

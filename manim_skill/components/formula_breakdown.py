@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from manim_skill.components.base import Component, register
 from manim_skill.components.theme import THEME, body_text
+from manim_skill.spec.latex import repair_latex
 
 
 class FormulaBreakdownParams(BaseModel):
@@ -18,7 +19,7 @@ class FormulaBreakdown(Component):
     Params = FormulaBreakdownParams
 
     def build(self, params: FormulaBreakdownParams) -> Mobject:
-        formula = MathTex(params.formula, color=THEME.INK)
+        formula = MathTex(repair_latex(params.formula), color=THEME.INK)
         group = VGroup(formula)
         if params.title:
             group.add(body_text(params.title, size=28).next_to(formula, DOWN))

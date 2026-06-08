@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from manim_skill.spec.latex import latex_warnings
 from manim_skill.spec.schema import SceneSpec
 
 CAPTION_MAX_CHARS = 60
@@ -41,4 +42,11 @@ def lint_spec(spec: SceneSpec) -> list[LintWarning]:
                 warnings.append(LintWarning(i, "raw_sets_background", "raw beat sets background_color; the builder owns the themed background"))
             if "ITALIC" in code or "italic=True" in code:
                 warnings.append(LintWarning(i, "raw_uses_italic", "raw beat uses italics; the visual rules ban italics"))
+        if beat.component == "FormulaBreakdown":
+            for msg in latex_warnings((beat.params or {}).get("formula") or ""):
+                warnings.append(LintWarning(i, "latex_suspicious", msg))
+        if beat.component == "FormulaWalkthrough":
+            for seg in (beat.params or {}).get("segments") or []:
+                for msg in latex_warnings(seg):
+                    warnings.append(LintWarning(i, "latex_suspicious", msg))
     return warnings
