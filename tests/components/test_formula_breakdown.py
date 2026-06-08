@@ -67,6 +67,25 @@ def test_mathtex_receives_ink_color():
     assert mock_mathtex.call_args.kwargs.get("color") == THEME.INK
 
 
+def test_build_repairs_over_escaped_formula():
+    from unittest.mock import patch
+
+    from manim import Dot
+
+    from manim_skill.components.formula_breakdown import (
+        FormulaBreakdown,
+        FormulaBreakdownParams,
+    )
+
+    with patch(
+        "manim_skill.components.formula_breakdown.MathTex", return_value=Dot()
+    ) as mock_mathtex:
+        FormulaBreakdown().build(FormulaBreakdownParams(formula="\\\\mathbf{x}"))
+
+    passed = mock_mathtex.call_args.args[0]
+    assert passed == "\\mathbf{x}"  # repaired to a single backslash
+
+
 @pytest.mark.docker
 def test_formula_breakdown_renders_in_docker(tmp_path):
     # build()/animate() use MathTex (LaTeX); verified inside the docker
