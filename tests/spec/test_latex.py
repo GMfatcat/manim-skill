@@ -49,3 +49,12 @@ def test_warnings_clean_formula_silent():
 
 def test_warnings_allow_matrix_row_separator():
     assert latex_warnings(r"\begin{matrix} a \\ b \end{matrix}") == []
+
+
+def test_repair_extended_commands():
+    # arrows, relations, delimiters, operators added to the whitelist
+    assert repair_latex(r"\\rightarrow") == r"\rightarrow"
+    assert repair_latex(r"\\leq \\geq \\neq") == r"\leq \geq \neq"
+    assert repair_latex(r"\\left( x \\right)") == r"\left( x \right)"
+    assert repair_latex(r"a \\to b \\cdots") == r"a \to b \cdots"
+    assert repair_latex(r"\\log \\max \\sin") == r"\log \max \sin"
