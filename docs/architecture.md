@@ -100,6 +100,25 @@ specs under `docs/superpowers/`.
 
 ## Render backend
 
+```mermaid
+flowchart TB
+    BATCH["render_batch(specs, quality, repairer?)<br/>render/backend.py"]
+    BATCH -->|"one clip per spec"| CLIP["clip<br/>render/jobs.py"]
+    CLIP -->|"one job per beat"| BEAT["beat → its own 1-beat spec"]
+    BEAT --> Q["RenderQueue<br/>parallel up to worker cap · queue.py"]
+    Q --> DR["docker render container<br/>--network none · read-only · capped · timeout<br/>docker_render.render_spec_to_mp4"]
+    CACHE[("content-hash cache<br/>cache.py")] -. "hit → skip render" .-> Q
+    REP["BeatRepairer<br/>(raw beats only)"] -. "render fails → traceback → LLM fix → retry" .-> DR
+    DR -->|"beat_*.mp4"| STITCH["ffmpeg concat → clip.mp4<br/>stitch.py"]
+    STITCH --> GIF["clip.gif<br/>convert.py"]
+    STITCH --> BUNDLE["bundle all clips<br/>bundle.py"]
+    GIF --> BUNDLE
+    BUNDLE --> ZIP["output.zip + manifest.json"]
+```
+
+Failure is graceful and isolated: a failed beat is skipped, a failed clip
+doesn't stop the batch.
+
 `render_batch(specs, workdir, *, repairer=None, quality="medium")` is the
 entry point. Job hierarchy: **batch → clip (one per spec) → beat**. Each beat
 is rendered independently as a 1-beat spec in its own docker container
