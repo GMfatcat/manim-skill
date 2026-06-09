@@ -19,3 +19,6 @@ openrouter-key.txt
 # eval / scratch output and crash dumps
 out/
 *.stackdump
+
+# Claude Code local runtime (locks, session state)
+.claude/
