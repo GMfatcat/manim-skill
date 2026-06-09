@@ -3,7 +3,7 @@
 `manim-skill` turns a concept (text, a code snippet, or a PDF) into a short
 manim animation (mp4 + gif, bundled in a zip). This document is the single
 runtime + layering picture; `CLAUDE.md` carries the working conventions and
-`DEPLOY.md` the deployment steps.
+`DEPLOY.md` the deployment steps. (中文: `docs/architecture.zh-TW.md`.)
 
 ## Runtime data flow
 

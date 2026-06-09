@@ -185,7 +185,7 @@ cli.py        manim-skill CLI
 
 渲染後端把每個 beat 在各自的沙箱容器內獨立、平行渲染，並對 beat / clip 層級的失敗做優雅處理。服務後端把它包成一個非同步的 job API；Streamlit 前端與 CLI 的 remote mode 都是它的薄 client。整個系統以一個通用 Docker image 透過 docker-compose 部署。
 
-完整架構見 `docs/architecture.md`（runtime 流程圖 + 分層 + render 後端 + service），工作慣例見 `CLAUDE.md`，設計規格與實作計畫見 `docs/superpowers/`，部署見 `DEPLOY.md`。
+完整架構見 `docs/architecture.zh-TW.md`（runtime 流程圖 + 分層 + render 後端 + service），工作慣例見 `CLAUDE.md`，設計規格與實作計畫見 `docs/superpowers/`，部署見 `DEPLOY.md`。
 
 ## 開發
 
