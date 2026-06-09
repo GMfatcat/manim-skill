@@ -15,9 +15,9 @@ Examples:
     python scripts/eval/run_smoke.py analyze nvidia/nemotron-nano-9b-v2:free \\
         tests/realworld-test/multihead_attention.py code out/smoke/mha-nano
     python scripts/eval/run_smoke.py codegen openai/gpt-oss-120b:free \\
-        tests/realworld-test/dlm_report.html text out/smoke/dlm-gptoss
+        path/to/your_report.html text out/smoke/report-gptoss
     python scripts/eval/run_smoke.py full nvidia/nemotron-nano-9b-v2:free \\
-        tests/realworld-test/mHC.pdf pdf out/smoke/mhc-nano
+        path/to/your_paper.pdf pdf out/smoke/paper-nano
 """
 
 from __future__ import annotations
