@@ -137,6 +137,38 @@ CJK note: the docker image bundles Noto CJK, so plain-text components (TextBeat,
 
 ## Architecture
 
+Two consumer paths produce or consume the same **scene spec** and share one render backend:
+
+```mermaid
+flowchart TB
+    AG["External agent / Claude Code"]
+    UI["Streamlit UI<br/>frontend/"]
+
+    AG -->|"writes a scene spec"| SPEC
+    AG --> CLI["manim-skill CLI · cli.py"]
+    UI -->|"upload material"| BC["backend_client.py<br/>(shared HTTP client)"]
+    CLI -->|"--remote / MANIM_SKILL_BACKEND"| BC
+    CLI -->|"local, in-process"| RB
+
+    BC -->|"REST /analyze /render /jobs"| API["FastAPI job API<br/>service/app.py"]
+    API <--> RJ[("Redis<br/>job store + RQ queue")]
+    RJ --> W["RQ worker<br/>service/worker.py · handlers.py"]
+    W --> AN["analyze · concepts"]
+    W --> CG["generate_spec · lint re-ask"]
+    AN --> LLM[("internal LLM<br/>OpenAI-compatible (vLLM/Ollama)")]
+    CG --> LLM
+    CG --> SPEC
+
+    SPEC{{"scene spec — the single contract"}}
+    SPEC --> RB["render_batch<br/>render/backend.py"]
+    RB --> BEAT["per-beat docker render<br/>sandboxed: --network none, read-only, capped"]
+    BEAT --> STITCH["ffmpeg stitch → gif"]
+    STITCH --> ZIP["output.zip + manifest.json"]
+```
+
+- **Web path** — Streamlit → `backend_client` → the FastAPI job API → Redis/RQ → worker. It is **two independent jobs**: an `analyze` job, then (after the human review checkpoint, which lives in the Streamlit session) a `render` job that runs `generate_spec` (`mode=codegen`) then `render_batch`.
+- **Agent path** — the agent writes the spec itself (no LLM); the CLI renders it locally, or (`--remote`) submits it to the same API as a `mode=spec` render job.
+
 Strictly one-directional layers:
 
 ```
@@ -153,7 +185,7 @@ cli.py        the manim-skill CLI
 
 The render backend renders each beat independently in its own sandboxed container, in parallel, with graceful per-beat / per-clip failure handling. The service backend turns that into an async job API; the Streamlit frontend and the CLI's remote mode are both thin clients of it. The whole thing deploys as one universal Docker image via docker-compose.
 
-See `CLAUDE.md` for the full architecture, `docs/superpowers/` for the design specs and the nine implementation plans, and `DEPLOY.md` for deployment.
+See `docs/architecture.md` for the full architecture (runtime diagram + layers + render backend + service), `CLAUDE.md` for the working conventions, `docs/superpowers/` for the design specs and implementation plans, and `DEPLOY.md` for deployment.
 
 ## Development
 

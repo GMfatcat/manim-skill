@@ -137,6 +137,38 @@ print(batch.zip_path)
 
 ## 架構
 
+兩條消費路徑都生產或消費同一份 **scene spec**,並共用同一個 render backend:
+
+```mermaid
+flowchart TB
+    AG["External agent / Claude Code"]
+    UI["Streamlit UI<br/>frontend/"]
+
+    AG -->|"writes a scene spec"| SPEC
+    AG --> CLI["manim-skill CLI · cli.py"]
+    UI -->|"upload material"| BC["backend_client.py<br/>(shared HTTP client)"]
+    CLI -->|"--remote / MANIM_SKILL_BACKEND"| BC
+    CLI -->|"local, in-process"| RB
+
+    BC -->|"REST /analyze /render /jobs"| API["FastAPI job API<br/>service/app.py"]
+    API <--> RJ[("Redis<br/>job store + RQ queue")]
+    RJ --> W["RQ worker<br/>service/worker.py · handlers.py"]
+    W --> AN["analyze · concepts"]
+    W --> CG["generate_spec · lint re-ask"]
+    AN --> LLM[("internal LLM<br/>OpenAI-compatible (vLLM/Ollama)")]
+    CG --> LLM
+    CG --> SPEC
+
+    SPEC{{"scene spec — the single contract"}}
+    SPEC --> RB["render_batch<br/>render/backend.py"]
+    RB --> BEAT["per-beat docker render<br/>sandboxed: --network none, read-only, capped"]
+    BEAT --> STITCH["ffmpeg stitch → gif"]
+    STITCH --> ZIP["output.zip + manifest.json"]
+```
+
+- **Web 路徑** — Streamlit → `backend_client` → FastAPI job API → Redis/RQ → worker。是**兩個獨立 job**:先一個 `analyze` job,再(經過存在於 Streamlit session 的人工審查檢查點後)一個 `render` job,跑 `generate_spec`(`mode=codegen`)再 `render_batch`。
+- **Agent 路徑** — agent 自己寫 spec(不經 LLM);CLI 在本地渲染,或(`--remote`)把 spec 當 `mode=spec` 的 render job 送到同一個 API。
+
 嚴格的單向分層：
 
 ```
@@ -153,7 +185,7 @@ cli.py        manim-skill CLI
 
 渲染後端把每個 beat 在各自的沙箱容器內獨立、平行渲染，並對 beat / clip 層級的失敗做優雅處理。服務後端把它包成一個非同步的 job API；Streamlit 前端與 CLI 的 remote mode 都是它的薄 client。整個系統以一個通用 Docker image 透過 docker-compose 部署。
 
-完整架構見 `CLAUDE.md`，設計規格與九份實作計畫見 `docs/superpowers/`，部署見 `DEPLOY.md`。
+完整架構見 `docs/architecture.md`（runtime 流程圖 + 分層 + render 後端 + service），工作慣例見 `CLAUDE.md`，設計規格與實作計畫見 `docs/superpowers/`，部署見 `DEPLOY.md`。
 
 ## 開發
 

@@ -33,6 +33,8 @@ Environment: Windows + Docker Desktop, Python 3.13, manim 0.20.1. There is **no 
 
 ## Architecture
 
+`docs/architecture.md` has the runtime data-flow diagram (the two consumer paths + the shared spec contract + render backend). The layering below is the module map.
+
 Strict one-directional layering — `spec` is pure data with no manim import; later layers depend only on earlier ones:
 
 ```
