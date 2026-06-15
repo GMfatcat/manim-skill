@@ -93,6 +93,54 @@ print(batch.zip_path)
 
 The internal LLM is reached through any OpenAI-compatible endpoint (vLLM, Ollama).
 
+### Worked example — one paper, two paths
+
+Both paths were run end to end on the **ORCA** paper (*ORCA: A Distributed Serving System for Transformer-Based Generative Models*, OSDI '22 — ~90K characters of extracted PDF text) over the same five concepts: iteration-level scheduling, selective batching, distributed pipeline parallelism, the end-to-end performance gain, and the overall system architecture.
+
+**Backend path (LLM-driven).** Point the CLI at any OpenAI-compatible endpoint — here two free OpenRouter models under 35B — and it reads the PDF and writes every spec:
+
+```bash
+export MANIM_SKILL_LLM_BASE_URL=https://openrouter.ai/api/v1
+export MANIM_SKILL_LLM_MODEL=nvidia/nemotron-3-nano-30b-a3b:free   # or google/gemma-4-31b-it:free
+export MANIM_SKILL_LLM_API_KEY=<your-openrouter-key>
+
+manim-skill analyze orca.pdf --kind pdf -o out/orca     # → concepts.json
+# review checkpoint: edit concepts.json — drop / reorder / add concepts (we settled on 5)
+manim-skill codegen-concepts out/orca                   # → spec_NN.json per concept
+manim-skill bundle out/orca --quality medium            # → out/orca/output.zip
+```
+
+Rendered over the same five concepts, the two models land very differently — and the optional repair loop (the LLM is re-asked with the render traceback, up to 3× per failing `raw` beat; wired into `render_batch(..., repairer=...)`) closes most of the gap:
+
+| Model (< 35B, free) | beats rendered | clips | how it wrote the specs |
+|---|---|---|---|
+| `nemotron-3-nano-30b-a3b` | 10 / 17 (59 %) | 4 / 5 | every beat hand-written as `raw` |
+| &nbsp;&nbsp;+ repair loop | **16 / 17 (94 %)** | 5 / 5 | one `SyntaxError` beat fixed on re-ask |
+| `gemma-4-31b-it` | 25 / 31 (81 %) | 5 / 5 | mixed — 14 component / 17 `raw` beats |
+| &nbsp;&nbsp;+ repair loop | **28 / 31 (90 %)** | 5 / 5 | most failing `raw` beats fixed |
+
+The all-`raw` small model lost a whole clip to a `SyntaxError` (it packed an entire beat onto one line) — exactly the raw-heavy failure mode `CLAUDE.md` documents for sub-35B models; the repair loop recovered it. The larger model leaned on components more, started higher, and even its leftover failures were mostly `raw` beats the repair loop couldn't fix in three tries. A bigger component-using model (nemotron-3-super class) clears 87–100 % on the same harness with no repair at all.
+
+> **Where the repair loop runs.** The deployed web service applies it to every `raw` beat **automatically** — there is no UI toggle, so the **+ repair loop** rows above are also what the service produces out of the box (and what an agent gets when it submits a spec via `--remote`). `run_pipeline(..., repair=True)` is the in-process equivalent. The **local** `manim-skill bundle` / `render` CLI deliberately does **not** repair: on the agent path the agent itself is the repair loop — it reads the traceback, rewrites the spec, and re-renders. So the plain **no repair** rows above are exactly what local `manim-skill bundle` gives you.
+
+**Agent path (no LLM).** The agent wrote the same five concepts as **component** specs — `TextBeat`, `PipelineDiagram`, `GraphBeat`, `TableBeat`, `PlotEvolution` — and rendered them locally:
+
+```bash
+manim-skill validate out/orca-agent/spec_00.json    # OK: 3 beat(s)
+manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.zip
+```
+
+Result: **15 / 15 beats, 5 / 5 clips** (4.8 MB zip), no repair needed. Choosing components by hand gives every beat the shared theme and a safe layout by construction, so nothing is lost to malformed code.
+
+Three of those agent-path clips (medium quality, 720p30 — shown here as gifs):
+
+| Iteration-level scheduling | End-to-end performance gain | System architecture |
+|:---:|:---:|:---:|
+| ![Iteration-level scheduling](docs/examples/orca/iteration-level-scheduling.gif) | ![End-to-end performance gain](docs/examples/orca/end-to-end-performance-gain.gif) | ![ORCA system architecture](docs/examples/orca/system-architecture.gif) |
+| `PipelineDiagram` | `TableBeat` + `PlotEvolution` | `GraphBeat` |
+
+That contrast *is* the design thesis: components are robust; free-form `raw` code from a small model is fragile, but the repair loop buys back most of the difference. When an LLM drives the backend path, prefer a mid/large model that picks components — and turn on the repair loop for the `raw` beats it does write.
+
 ## The scene spec
 
 A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beats`. Each beat is either a **component** (a name + `params` matching that component's schema) or a **`raw` beat** (a `code` string of manim Python, where the scene is `self`).
@@ -111,7 +159,7 @@ A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beat
 
 ## Components
 
-The library ships 15 components. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
+The library ships 18 components. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
 
 | Component | For |
 |-----------|-----|
@@ -130,6 +178,9 @@ The library ships 15 components. Each declares a Pydantic parameter schema — t
 | `FormulaWalkthrough` | a LaTeX formula whose parts get boxed + captioned step by step |
 | `GeometryAnim` | basic shapes + transforms |
 | `TextBeat` | title cards / captions / bullet lists |
+| `SectionDivider` | a numbered section / chapter title card |
+| `TokenSequence` | a row of generation tokens (autoregressive decoding) |
+| `TwoColumn` | two labeled columns side by side, for comparisons |
 
 Adding a component is a single file in `manim_skill/components/` — it is auto-discovered, and the catalog and skill docs update automatically.
 
@@ -198,6 +249,6 @@ The whole `llm/` layer and the `service/` backend are tested with fakes (`FakeLL
 
 ### Live eval against a real LLM
 
-`scripts/eval/run_smoke.py` points `OpenAIClient` at any OpenAI-compatible endpoint (here: OpenRouter free models) and exercises the LLM half — `analyze` / `codegen` / full pipeline — on the materials in `tests/realworld-test/` (a code snippet; the paper/report inputs aren't shipped with the repo). Two stages report per-concept success and dump the validated specs; `scripts/eval/render_specs.py` then renders them and reports per-beat results. `scripts/eval/bundle_specs.py` takes any directory of validated specs and renders them as one `render_batch`, producing a single zip + `manifest.json` — the natural end-to-end deliverable.
+`scripts/eval/run_smoke.py` points `OpenAIClient` at any OpenAI-compatible endpoint (here: OpenRouter free models) and exercises the LLM half — `analyze` / `codegen` / full pipeline — on the materials in `tests/realworld-test/` (a code snippet; the paper/report inputs aren't shipped with the repo). Two stages report per-concept success and dump the validated specs; `scripts/eval/render_specs.py` then renders them and reports per-beat results. `scripts/eval/bundle_specs.py` takes any directory of validated specs and renders them as one `render_batch`, producing a single zip + `manifest.json` — the natural end-to-end deliverable; pass `--repair --model <slug>` to re-ask the LLM to fix `raw` beats that fail (pair with `--max-workers 1` on a rate-limited free endpoint).
 
 This is the harness the design doc deferred. A round against `nvidia/nemotron-3-super-120b-a12b:free` surfaced five raw-beat failure modes the LLM kept hitting (Scene-class wrappers, no `self.play` calls, double-escaped `\n` in JSON, cross-beat variable references, and the LaTeX sibling case) — each is now an explicit DO/DO NOT in the codegen system prompt, locked in by `tests/llm/test_codegen.py`. Re-running the broken concepts under the tightened prompt took beat-level render success from **58% → 93%**. A full end-to-end run on a Chinese DLM research report (not shipped with the repo; 64K chars → 5 concepts → 5 validated specs → 24 beats) hit **87.5 % beat success** and produced a 7.1 MB combined bundle.

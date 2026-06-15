@@ -93,6 +93,54 @@ print(batch.zip_path)
 
 內部 LLM 透過任何 OpenAI 相容 endpoint（vLLM、Ollama）存取。
 
+### 實作範例 — 同一篇論文、兩條路徑
+
+兩條路徑都用 **ORCA** 論文（*ORCA: A Distributed Serving System for Transformer-Based Generative Models*，OSDI '22；PDF 取出約 90K 字）跑了完整流程，針對相同的五個概念：iteration-level scheduling、selective batching、distributed pipeline parallelism、端到端效能提升，以及整體系統架構。
+
+**Backend 路徑（LLM 驅動）。** 把 CLI 指向任何 OpenAI 相容 endpoint —— 這裡用兩個 35B 以下的 OpenRouter 免費模型 —— 它會讀 PDF 並寫出每一份 spec：
+
+```bash
+export MANIM_SKILL_LLM_BASE_URL=https://openrouter.ai/api/v1
+export MANIM_SKILL_LLM_MODEL=nvidia/nemotron-3-nano-30b-a3b:free   # 或 google/gemma-4-31b-it:free
+export MANIM_SKILL_LLM_API_KEY=<你的-openrouter-key>
+
+manim-skill analyze orca.pdf --kind pdf -o out/orca     # → concepts.json
+# 審核檢查點：編輯 concepts.json — 可刪除／重排／新增概念（這裡定為 5 個）
+manim-skill codegen-concepts out/orca                   # → 每個概念一份 spec_NN.json
+manim-skill bundle out/orca --quality medium            # → out/orca/output.zip
+```
+
+在相同的五個概念上，兩個模型的結果差異很大 —— 而選用的修復迴圈（把 render 的 traceback 餵回 LLM 重問，每個失敗的 `raw` beat 最多 3 次；透過 `render_batch(..., repairer=...)` 接入）能補回大半差距：
+
+| 模型（< 35B、免費） | 成功 beat | clip | spec 怎麼寫的 |
+|---|---|---|---|
+| `nemotron-3-nano-30b-a3b` | 10 / 17 (59 %) | 4 / 5 | 每個 beat 都手寫成 `raw` |
+| &nbsp;&nbsp;+ 修復迴圈 | **16 / 17 (94 %)** | 5 / 5 | 那個 `SyntaxError` beat 重問後被修好 |
+| `gemma-4-31b-it` | 25 / 31 (81 %) | 5 / 5 | 混合 —— 14 個元件 / 17 個 `raw` beat |
+| &nbsp;&nbsp;+ 修復迴圈 | **28 / 31 (90 %)** | 5 / 5 | 大多數失敗的 `raw` beat 被修好 |
+
+全 `raw` 的小模型有一整個 clip 因 `SyntaxError` 掉了（它把一整個 beat 擠在同一行）—— 正是 `CLAUDE.md` 對 35B 以下模型記載的 raw-heavy 失敗模式；修復迴圈把它救了回來。較大的模型較常挑用元件、起點較高，連殘餘的失敗也大多是修復迴圈三次都修不動的 `raw` beat。更大、會挑用元件的模型（nemotron-3-super 等級）在同一套 harness 上不靠修復就能達 87–100 %。
+
+> **修復迴圈在哪裡跑。** 部署的 web 服務對每個 `raw` beat **自動套用**——沒有 UI 開關，所以上表的 **+ 修復迴圈** 列也就是服務開箱即得的結果（agent 透過 `--remote` 提交 spec 時同樣會被服務端自動修復）。`run_pipeline(..., repair=True)` 是 in-process 的對應。**本地** 的 `manim-skill bundle` / `render` CLI 則刻意**不**修復：在 agent 路徑上，agent 本身就是修復迴圈——它讀 traceback、改 spec、重渲染。所以上表的 **無修復** 列正是本地 `manim-skill bundle` 會給你的結果。
+
+**Agent 路徑（無 LLM）。** 由 agent 把相同的五個概念寫成 **元件** spec — `TextBeat`、`PipelineDiagram`、`GraphBeat`、`TableBeat`、`PlotEvolution` — 並在本地渲染：
+
+```bash
+manim-skill validate out/orca-agent/spec_00.json    # OK: 3 beat(s)
+manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.zip
+```
+
+結果：**15 / 15 個 beat、5 / 5 個 clip**（4.8 MB zip），完全不需修復。手動挑元件讓每個 beat 天生就帶有共用主題與安全版面，所以不會有任何東西因為程式碼壞掉而消失。
+
+其中三個 agent 路徑的 clip（medium 畫質、720p30，這裡以 gif 呈現）：
+
+| 迭代層級排程 | 端到端效能提升 | 系統架構 |
+|:---:|:---:|:---:|
+| ![迭代層級排程](docs/examples/orca/iteration-level-scheduling.gif) | ![端到端效能提升](docs/examples/orca/end-to-end-performance-gain.gif) | ![ORCA 系統架構](docs/examples/orca/system-architecture.gif) |
+| `PipelineDiagram` | `TableBeat` + `PlotEvolution` | `GraphBeat` |
+
+這個對比正是整套設計的核心論點：元件穩健、小模型自由發揮的 `raw` 程式碼脆弱，但修復迴圈能買回大半差距。當由 LLM 驅動 backend 路徑時，優先選會挑用元件的中大型模型 —— 並為它確實寫出的 `raw` beat 開啟修復迴圈。
+
 ## Scene spec
 
 一份 scene spec 是一個 JSON 物件：一個 `title`、一個 `aspect_ratio`、和一串 `beats`。每個 beat 不是一個**元件**（元件名稱 + 符合該元件 schema 的 `params`），就是一個 **`raw` beat**（一段 manim Python 的 `code` 字串，場景即 `self`）。
@@ -111,7 +159,7 @@ print(batch.zip_path)
 
 ## 元件
 
-元件庫內含 15 個元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
+元件庫內含 18 個元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
 
 | 元件 | 用途 |
 |------|------|
@@ -130,6 +178,9 @@ print(batch.zip_path)
 | `FormulaWalkthrough` | LaTeX 公式逐段框選 + 加註解 |
 | `GeometryAnim` | 基本形狀 + 變換 |
 | `TextBeat` | 標題卡 / 字幕 / 條列 |
+| `SectionDivider` | 有編號的章節標題卡 |
+| `TokenSequence` | 一排生成 token（自回歸解碼） |
+| `TwoColumn` | 左右兩欄並排，用於對照 |
 
 新增一個元件只需要在 `manim_skill/components/` 放一個檔案——會被自動探索，目錄與 skill 文件也會自動更新。
 
@@ -198,7 +249,7 @@ pytest                     # 完整套件，含 Docker 整合測試
 
 ### 對真實 LLM 的活體評估
 
-`scripts/eval/run_smoke.py` 把 `OpenAIClient` 指向任何 OpenAI 相容 endpoint（例：OpenRouter free 模型），用 `tests/realworld-test/` 內的素材（一段 attention 程式碼;論文/報告等輸入素材未隨 repo 提供）實際跑 LLM 半邊——`analyze` / `codegen` / 完整 pipeline——按 concept 報成功率並 dump 出已驗證的 spec；`scripts/eval/render_specs.py` 接著把這些 spec 一支一個 zip 渲染、按 beat 報結果；`scripts/eval/bundle_specs.py` 把一個目錄底下所有 `spec_*.json` 一次過送進 `render_batch`，產出單一 zip + `manifest.json`——這是最自然的「end-to-end 交付物」。
+`scripts/eval/run_smoke.py` 把 `OpenAIClient` 指向任何 OpenAI 相容 endpoint（例：OpenRouter free 模型），用 `tests/realworld-test/` 內的素材（一段 attention 程式碼;論文/報告等輸入素材未隨 repo 提供）實際跑 LLM 半邊——`analyze` / `codegen` / 完整 pipeline——按 concept 報成功率並 dump 出已驗證的 spec；`scripts/eval/render_specs.py` 接著把這些 spec 一支一個 zip 渲染、按 beat 報結果；`scripts/eval/bundle_specs.py` 把一個目錄底下所有 `spec_*.json` 一次過送進 `render_batch`，產出單一 zip + `manifest.json`——這是最自然的「end-to-end 交付物」；加上 `--repair --model <slug>` 可在 `raw` beat 渲染失敗時重問 LLM 修復（在有限速的免費 endpoint 上搭配 `--max-workers 1`）。
 
 這就是設計文件預留的活體評估 harness。對 `nvidia/nemotron-3-super-120b-a12b:free` 跑一輪,發現了 5 種 LLM 反覆踩到的 raw beat 失敗模式（Scene class 包裹、沒呼叫 `self.play`、JSON 把 `\n` 雙重 escape、引用其他 beat 變數,以及 LaTeX 的同類錯誤）——這 5 條現在都是 codegen system prompt 裡明確的 DO/DO NOT,由 `tests/llm/test_codegen.py` 鎖死。把破掉的 concept 用緊化過的 prompt 重跑,beat 層級渲染成功率從 **58% → 93%**。對一份中文 DLM 研究報告（未隨 repo 提供;64K 字 → 5 concepts → 5 validated specs → 24 beats）跑一次 e2e，達 **87.5% beat 成功率**，產出 7.1 MB 合輯。
 
