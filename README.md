@@ -132,12 +132,30 @@ manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.
 
 Result: **15 / 15 beats, 5 / 5 clips** (4.8 MB zip), no repair needed. Choosing components by hand gives every beat the shared theme and a safe layout by construction, so nothing is lost to malformed code.
 
-Three of those agent-path clips (medium quality, 720p30 — shown here as gifs):
+#### Example output — the same paper, three ways
+
+All clips below are medium quality (720p30), no repair. The agent path (hand-picked components) is uniformly clean; the two LLM-driven backends are more uneven, so for each model two of its stronger clips and one weaker one are shown.
+
+**Agent path** — hand-written component specs, **15/15 beats**:
 
 | Iteration-level scheduling | End-to-end performance gain | System architecture |
 |:---:|:---:|:---:|
 | ![Iteration-level scheduling](docs/examples/orca/iteration-level-scheduling.gif) | ![End-to-end performance gain](docs/examples/orca/end-to-end-performance-gain.gif) | ![ORCA system architecture](docs/examples/orca/system-architecture.gif) |
 | `PipelineDiagram` | `TableBeat` + `PlotEvolution` | `GraphBeat` |
+
+**`nemotron-3-nano-30b-a3b`** (< 35B, free) — every beat hand-written as `raw`, **10/17 beats**:
+
+| ✅ System architecture | ✅ Performance gain | ⚠️ Pipeline parallelism |
+|:---:|:---:|:---:|
+| ![nemotron architecture](docs/examples/orca/nemotron-architecture.gif) | ![nemotron performance](docs/examples/orca/nemotron-performance.gif) | ![nemotron pipeline](docs/examples/orca/nemotron-pipeline-poor.gif) |
+| 5/5 beats, clean boxes | the "36×" result lands | 1/3 beats — labels collide (no safe layout) |
+
+**`gemma-4-31b-it`** (< 35B, free) — mixed component + `raw`, **25/31 beats**:
+
+| ✅ Model partitioning | ✅ Selective batching | ⚠️ Performance gain |
+|:---:|:---:|:---:|
+| ![gemma partitioning](docs/examples/orca/gemma-partitioning.gif) | ![gemma batching](docs/examples/orca/gemma-batching.gif) | ![gemma performance](docs/examples/orca/gemma-performance-poor.gif) |
+| bullets + a clean GPU pipeline | split → attention → merge | 2/4 beats — sparse, ragged bar chart |
 
 That contrast *is* the design thesis: components are robust; free-form `raw` code from a small model is fragile, but the repair loop buys back most of the difference. When an LLM drives the backend path, prefer a mid/large model that picks components — and turn on the repair loop for the `raw` beats it does write.
 

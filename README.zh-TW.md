@@ -132,12 +132,30 @@ manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.
 
 結果：**15 / 15 個 beat、5 / 5 個 clip**（4.8 MB zip），完全不需修復。手動挑元件讓每個 beat 天生就帶有共用主題與安全版面，所以不會有任何東西因為程式碼壞掉而消失。
 
-其中三個 agent 路徑的 clip（medium 畫質、720p30，這裡以 gif 呈現）：
+#### 範例輸出 — 同一篇論文、三種來源
+
+以下所有 clip 皆為 medium 畫質（720p30）、未經修復。agent 路徑（手挑元件）一致地乾淨；兩個 LLM 驅動的 backend 則參差不齊，所以每個模型各放兩個較好的 clip 和一個較差的。
+
+**Agent 路徑** — 手寫元件 spec，**15/15 個 beat**：
 
 | 迭代層級排程 | 端到端效能提升 | 系統架構 |
 |:---:|:---:|:---:|
 | ![迭代層級排程](docs/examples/orca/iteration-level-scheduling.gif) | ![端到端效能提升](docs/examples/orca/end-to-end-performance-gain.gif) | ![ORCA 系統架構](docs/examples/orca/system-architecture.gif) |
 | `PipelineDiagram` | `TableBeat` + `PlotEvolution` | `GraphBeat` |
+
+**`nemotron-3-nano-30b-a3b`**（< 35B、免費）— 每個 beat 都手寫成 `raw`，**10/17 個 beat**：
+
+| ✅ 系統架構 | ✅ 效能提升 | ⚠️ 管線平行 |
+|:---:|:---:|:---:|
+| ![nemotron 架構](docs/examples/orca/nemotron-architecture.gif) | ![nemotron 效能](docs/examples/orca/nemotron-performance.gif) | ![nemotron 管線](docs/examples/orca/nemotron-pipeline-poor.gif) |
+| 5/5 beat，方塊乾淨 | 「36×」結果有呈現 | 1/3 beat —— 標籤重疊（沒有安全版面） |
+
+**`gemma-4-31b-it`**（< 35B、免費）— 元件 + `raw` 混合，**25/31 個 beat**：
+
+| ✅ 模型切分 | ✅ Selective batching | ⚠️ 效能提升 |
+|:---:|:---:|:---:|
+| ![gemma 切分](docs/examples/orca/gemma-partitioning.gif) | ![gemma batching](docs/examples/orca/gemma-batching.gif) | ![gemma 效能](docs/examples/orca/gemma-performance-poor.gif) |
+| 條列 + 乾淨的 GPU 管線 | 合併 → attention → 再合併 | 2/4 beat —— 稀疏、凌亂的長條圖 |
 
 這個對比正是整套設計的核心論點：元件穩健、小模型自由發揮的 `raw` 程式碼脆弱，但修復迴圈能買回大半差距。當由 LLM 驅動 backend 路徑時，優先選會挑用元件的中大型模型 —— 並為它確實寫出的 `raw` beat 開啟修復迴圈。
 
