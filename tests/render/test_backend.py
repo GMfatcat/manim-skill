@@ -171,3 +171,52 @@ def test_render_batch_repairer_recovers_failed_raw_beat(tmp_path, monkeypatch):
     batch = render_batch(specs, tmp_path, repairer=_FakeRepairer())
     assert batch.clip_jobs[0].status == JobStatus.DONE
     assert batch.clip_jobs[0].beat_jobs[0].status == JobStatus.DONE
+
+
+def test_render_batch_tier_deterministic_for_component_generated_for_raw(
+    tmp_path, monkeypatch
+):
+    _patch_docker_fns(monkeypatch)
+    specs = [
+        SceneSpec(
+            title="C",
+            beats=[
+                Beat(component="TextBeat", params={"text": "hi"}),
+                Beat(component="raw", code="self.wait(1)"),
+            ],
+        )
+    ]
+    batch = render_batch(specs, tmp_path, max_workers=1)
+    tiers = [bj.tier for bj in batch.clip_jobs[0].beat_jobs]
+    assert tiers == ["deterministic", "generated"]
+
+
+def test_render_batch_tier_unresolved_on_failure(tmp_path, monkeypatch):
+    _patch_docker_fns(monkeypatch, render_fn=_fake_render_raises)
+    specs = [SceneSpec(title="C", beats=[Beat(component="raw", code="bad")])]
+    batch = render_batch(specs, tmp_path)
+    assert batch.clip_jobs[0].beat_jobs[0].tier == "unresolved"
+
+
+def test_render_batch_tier_model_repaired_when_repairer_fixes(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(backend_mod, "render_spec_to_mp4", _fake_render_raises)
+    monkeypatch.setattr(backend_mod, "stitch_mp4s", _fake_stitch_mp4s)
+    monkeypatch.setattr(backend_mod, "mp4_to_gif", _fake_mp4_to_gif)
+
+    class _FakeRepairer:
+        def render_with_repair(
+            self, beat, work_dir, *, title, aspect_ratio, quality="medium"
+        ):
+            from manim_skill.llm.repair import RepairResult
+
+            work_dir = Path(work_dir)
+            work_dir.mkdir(parents=True, exist_ok=True)
+            mp4 = work_dir / "repaired.mp4"
+            mp4.write_bytes(b"\x00repaired")
+            return RepairResult(mp4_path=mp4, final_beat=beat, attempts=2)
+
+    specs = [SceneSpec(title="C", beats=[Beat(component="raw", code="broken")])]
+    batch = render_batch(specs, tmp_path, repairer=_FakeRepairer())
+    assert batch.clip_jobs[0].beat_jobs[0].tier == "model_repaired"

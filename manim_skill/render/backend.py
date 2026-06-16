@@ -13,6 +13,13 @@ from manim_skill.render.cache import BeatCache
 from manim_skill.render.convert import mp4_to_gif
 from manim_skill.render.docker_render import RenderError, render_spec_to_mp4
 from manim_skill.render.jobs import BatchJob, BeatJob, ClipJob, JobStatus
+from manim_skill.render.metrics import (
+    TIER_CACHED,
+    TIER_DETERMINISTIC,
+    TIER_GENERATED,
+    TIER_MODEL_REPAIRED,
+    TIER_UNRESOLVED,
+)
 from manim_skill.render.queue import RenderQueue
 from manim_skill.render.stitch import stitch_mp4s
 from manim_skill.spec.schema import SceneSpec
@@ -49,6 +56,7 @@ def _render_beat_job(
                 shutil.copy2(cached, dest)
                 beat_job.mp4_path = dest
                 beat_job.status = JobStatus.DONE
+                beat_job.tier = TIER_CACHED
                 return beat_job
 
         beat_work = clip_dir / f"beat_{index:02d}_work"
@@ -62,6 +70,9 @@ def _render_beat_job(
             )
             rendered = result.mp4_path
             beat_job.beat = result.final_beat
+            beat_job.tier = (
+                TIER_MODEL_REPAIRED if result.attempts > 1 else TIER_GENERATED
+            )
         else:
             one_beat_spec = SceneSpec(
                 title=clip.spec.title,
@@ -70,6 +81,11 @@ def _render_beat_job(
             )
             rendered = render_spec_to_mp4(
                 one_beat_spec, beat_work, quality=quality
+            )
+            beat_job.tier = (
+                TIER_GENERATED
+                if original_beat.component == "raw"
+                else TIER_DETERMINISTIC
             )
 
         shutil.copy2(rendered, dest)
@@ -80,6 +96,7 @@ def _render_beat_job(
     except RenderError as exc:
         beat_job.status = JobStatus.FAILED
         beat_job.error = str(exc)
+        beat_job.tier = TIER_UNRESOLVED
 
     return beat_job
 
