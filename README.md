@@ -1,86 +1,86 @@
 # manim-skill
 
-*[English](README.md) · [繁體中文](README.zh-TW.md)*
+*[English](README.en.md) · [繁體中文](README.md)*
 
-Turn a **concept** — a paragraph of text, a code snippet, or a PDF — into a short **manim animation** (mp4 + gif), suitable for slides or a README.
+把一個**概念**——一段文字、一段程式碼、或一份 PDF——轉成一支簡短的 **manim 動畫**（mp4 + gif），適合放進簡報或 README。
 
-It is an internal tool with two consumer paths that share one contract:
+這是一個內部工具，有兩條共用同一份契約的消費路徑：
 
-- **Web path** — upload material in a Streamlit UI → an internal LLM analyzes it and proposes concepts → you review and edit them → render → download a zip of mp4 + gif per concept.
-- **Agent path** — an external agent (e.g. Claude Code) writes a "scene spec" itself and renders it via the `manim-skill` CLI. No LLM on this side; the agent *is* the intelligence.
+- **Web 路徑** — 在 Streamlit 介面上傳素材 → 內部 LLM 分析、提出概念 → 使用者審核並編輯 → 渲染 → 下載每個概念一份 mp4 + gif 的 zip。
+- **Agent 路徑** — 外部 agent（例如 Claude Code）自己寫「scene spec」，透過 `manim-skill` CLI 渲染。這條路徑不涉及 LLM；agent 本身就是智慧來源。
 
-Both produce and consume the same **scene spec** (a validated JSON object) and go through the same component library and the same Docker-backed render backend.
+兩條路徑產出與消費的是同一份 **scene spec**（一個驗證過的 JSON 物件），走的是同一套元件庫與同一個 Docker 渲染後端。
 
-## Status
+## 進度
 
-Complete — both the local core pipeline (Phase 1) and the deployable multi-user web service (Phase 2): scene-spec pipeline, component library, render backend, LLM layer, CLI + agent skill, FastAPI job API + RQ workers, Streamlit frontend, and ARM64 / airgapped docker-compose packaging.
+已完成——本地核心 pipeline（Phase 1）與可部署的多人 Web 服務（Phase 2）都做完了：scene-spec pipeline、元件庫、渲染後端、LLM 層、CLI + agent skill、FastAPI job API + RQ workers、Streamlit 前端、以及 ARM64 / airgapped 的 docker-compose 打包。
 
-## Requirements
+## 環境需求
 
 - Python ≥ 3.12
-- Docker (rendering runs in a container; the deployed service runs as a docker-compose stack)
+- Docker（渲染在容器內執行；部署的服務以 docker-compose stack 運行）
 
-## Install (local development)
+## 安裝（本地開發）
 
 ```bash
 pip install -e ".[dev]"
 docker build -t manim-skill:latest -f docker/Dockerfile .
 ```
 
-## Usage
+## 使用方式
 
-### Deployed service — Streamlit UI + job API
+### 部署的服務 — Streamlit 介面 + job API
 
-The whole system runs as one `docker compose` stack: `redis`, a FastAPI job API, an RQ worker, and a Streamlit UI.
+整個系統以一個 `docker compose` stack 運行：`redis`、一個 FastAPI job API、一個 RQ worker、一個 Streamlit 介面。
 
 ```bash
-cp .env.example .env      # edit: LLM endpoint, work dir, concurrency, ...
+cp .env.example .env      # 編輯：LLM endpoint、work dir、併發數…
 docker compose up -d
 ```
 
-- Web UI: `http://<host>:8501` — upload → review/edit concepts → render → download.
-- Job API: `http://<host>:8000`.
+- Web 介面：`http://<host>:8501` — 上傳 → 審核/編輯概念 → 渲染 → 下載。
+- Job API：`http://<host>:8000`。
 
-For the airgapped ARM64 deployment to a DGX Spark (cross-build, `docker save` bundle, transfer, `docker load`), see **[DEPLOY.md](DEPLOY.md)**.
+要部署到 DGX Spark 的 airgapped ARM64 環境（交叉建置、`docker save` 打包、搬移、`docker load`），見 **[DEPLOY.md](DEPLOY.md)**。
 
-### Agent path — the CLI
+### Agent 路徑 — CLI
 
-Write a scene spec as a JSON file, then:
+把 scene spec 寫成一個 JSON 檔，然後：
 
 ```bash
-manim-skill catalog                                # list components + their schemas
-manim-skill validate path/to/spec.json             # validate without rendering
-manim-skill render path/to/spec.json --workdir out                  # render locally
-manim-skill render path/to/spec.json --remote http://<host>:8000    # render via the deployed backend
+manim-skill catalog                                # 列出元件與其 schema
+manim-skill validate path/to/spec.json             # 只驗證、不渲染
+manim-skill render path/to/spec.json --workdir out                  # 本地渲染
+manim-skill render path/to/spec.json --remote http://<host>:8000    # 透過部署的後端渲染
 ```
 
-`--remote` (or the `MANIM_SKILL_BACKEND` env var) submits the spec to the deployed service and polls for the result instead of rendering in-process. If a `raw` beat fails to render, `render` prints the traceback — fix the spec and render again.
+`--remote`（或 `MANIM_SKILL_BACKEND` 環境變數）會把 spec 提交給部署的服務並輪詢結果，而非在本機 in-process 渲染。若某個 `raw` beat 渲染失敗，`render` 會印出 traceback——修正 spec 後再渲染一次。
 
-For the LLM-driven flow (input → concepts → specs → bundle) the CLI exposes the same stages the web service uses, with a review checkpoint between analyze and codegen:
+LLM-driven 流程（輸入 → 概念 → spec → 合輯）CLI 把 web 服務同樣的階段攤出來，在 analyze 跟 codegen 之間留審核點：
 
 ```bash
-# Stage 1: LLM analyze; writes <workdir>/concepts.json
+# 階段 1：LLM analyze；寫 <workdir>/concepts.json
 manim-skill analyze paper.pdf --kind pdf -o out
 
-# (Optional) edit out/concepts.json — drop / reorder / rewrite concepts
+# (可選) 編輯 out/concepts.json — 刪／重排／改寫概念
 
-# Stage 2: LLM codegen for each concept; writes <workdir>/spec_NN.json
-manim-skill codegen-concepts out                    # all concepts
-manim-skill codegen-concepts out --indices 0,2,4    # subset
+# 階段 2：每個概念跑 codegen；寫 <workdir>/spec_NN.json
+manim-skill codegen-concepts out                    # 全部概念
+manim-skill codegen-concepts out --indices 0,2,4    # 只挑幾個
 
-# Stage 3: local docker render; writes <workdir>/output.zip
+# 階段 3：本機 docker render；寫 <workdir>/output.zip
 manim-skill bundle out --quality high               # 1080p60
 
-# Or one-shot, with an interactive pause for review between stages 1 and 2:
-manim-skill demo paper.pdf --kind pdf -o out                # prompts before codegen
-manim-skill demo paper.pdf --kind pdf -o out --yes          # skip the prompt
+# 或一鍵 demo，階段 1 跟 2 之間互動式停下來等審核：
+manim-skill demo paper.pdf --kind pdf -o out                # codegen 前會 prompt
+manim-skill demo paper.pdf --kind pdf -o out --yes          # 跳過 prompt
 ```
 
-LLM endpoint is read from `MANIM_SKILL_LLM_BASE_URL` (default `http://localhost:11434/v1`), `MANIM_SKILL_LLM_MODEL` (default `qwen3.5-35b`), and `MANIM_SKILL_LLM_API_KEY` env vars. When an agent (Claude Code, etc.) is the human-checkpoint driver, it should call `analyze` / `codegen-concepts` / `bundle` separately and run its own review UI between them.
+LLM endpoint 從 `MANIM_SKILL_LLM_BASE_URL`（預設 `http://localhost:11434/v1`）、`MANIM_SKILL_LLM_MODEL`（預設 `qwen3.5-35b`）、`MANIM_SKILL_LLM_API_KEY` 環境變數讀。若是 agent（Claude Code 等）擔任人工確認者，建議分別呼叫 `analyze` / `codegen-concepts` / `bundle`，自己跑審核 UI。
 
-### Web pipeline in Python
+### 在 Python 裡跑 Web pipeline
 
-`manim_skill.llm.run_pipeline` runs input → analyze → codegen → render directly, for scripting:
+`manim_skill.llm.run_pipeline` 直接跑「輸入 → analyze → codegen → render」，適合腳本化：
 
 ```python
 from manim_skill.llm.client import OpenAIClient
@@ -91,77 +91,77 @@ batch = run_pipeline(client, source_text, "text", workdir="out")
 print(batch.zip_path)
 ```
 
-The internal LLM is reached through any OpenAI-compatible endpoint (vLLM, Ollama).
+內部 LLM 透過任何 OpenAI 相容 endpoint（vLLM、Ollama）存取。
 
-### Worked example — one paper, two paths
+### 實作範例 — 同一篇論文、兩條路徑
 
-Both paths were run end to end on the **ORCA** paper (*ORCA: A Distributed Serving System for Transformer-Based Generative Models*, OSDI '22 — ~90K characters of extracted PDF text) over the same five concepts: iteration-level scheduling, selective batching, distributed pipeline parallelism, the end-to-end performance gain, and the overall system architecture.
+兩條路徑都用 **ORCA** 論文（*ORCA: A Distributed Serving System for Transformer-Based Generative Models*，OSDI '22；PDF 取出約 90K 字）跑了完整流程，針對相同的五個概念：iteration-level scheduling、selective batching、distributed pipeline parallelism、端到端效能提升，以及整體系統架構。
 
-**Backend path (LLM-driven).** Point the CLI at any OpenAI-compatible endpoint — here two free OpenRouter models under 35B — and it reads the PDF and writes every spec:
+**Backend 路徑（LLM 驅動）。** 把 CLI 指向任何 OpenAI 相容 endpoint —— 這裡用兩個 35B 以下的 OpenRouter 免費模型 —— 它會讀 PDF 並寫出每一份 spec：
 
 ```bash
 export MANIM_SKILL_LLM_BASE_URL=https://openrouter.ai/api/v1
-export MANIM_SKILL_LLM_MODEL=nvidia/nemotron-3-nano-30b-a3b:free   # or google/gemma-4-31b-it:free
-export MANIM_SKILL_LLM_API_KEY=<your-openrouter-key>
+export MANIM_SKILL_LLM_MODEL=nvidia/nemotron-3-nano-30b-a3b:free   # 或 google/gemma-4-31b-it:free
+export MANIM_SKILL_LLM_API_KEY=<你的-openrouter-key>
 
 manim-skill analyze orca.pdf --kind pdf -o out/orca     # → concepts.json
-# review checkpoint: edit concepts.json — drop / reorder / add concepts (we settled on 5)
-manim-skill codegen-concepts out/orca                   # → spec_NN.json per concept
+# 審核檢查點：編輯 concepts.json — 可刪除／重排／新增概念（這裡定為 5 個）
+manim-skill codegen-concepts out/orca                   # → 每個概念一份 spec_NN.json
 manim-skill bundle out/orca --quality medium            # → out/orca/output.zip
 ```
 
-Rendered over the same five concepts, the two models land very differently — and the optional repair loop (the LLM is re-asked with the render traceback, up to 3× per failing `raw` beat; wired into `render_batch(..., repairer=...)`) closes most of the gap:
+在相同的五個概念上，兩個模型的結果差異很大 —— 而選用的修復迴圈（把 render 的 traceback 餵回 LLM 重問，每個失敗的 `raw` beat 最多 3 次；透過 `render_batch(..., repairer=...)` 接入）能補回大半差距：
 
-| Model (< 35B, free) | beats rendered | clips | how it wrote the specs |
+| 模型（< 35B、免費） | 成功 beat | clip | spec 怎麼寫的 |
 |---|---|---|---|
-| `nemotron-3-nano-30b-a3b` | 10 / 17 (59 %) | 4 / 5 | every beat hand-written as `raw` |
-| &nbsp;&nbsp;+ repair loop | **16 / 17 (94 %)** | 5 / 5 | one `SyntaxError` beat fixed on re-ask |
-| `gemma-4-31b-it` | 25 / 31 (81 %) | 5 / 5 | mixed — 14 component / 17 `raw` beats |
-| &nbsp;&nbsp;+ repair loop | **28 / 31 (90 %)** | 5 / 5 | most failing `raw` beats fixed |
+| `nemotron-3-nano-30b-a3b` | 10 / 17 (59 %) | 4 / 5 | 每個 beat 都手寫成 `raw` |
+| &nbsp;&nbsp;+ 修復迴圈 | **16 / 17 (94 %)** | 5 / 5 | 那個 `SyntaxError` beat 重問後被修好 |
+| `gemma-4-31b-it` | 25 / 31 (81 %) | 5 / 5 | 混合 —— 14 個元件 / 17 個 `raw` beat |
+| &nbsp;&nbsp;+ 修復迴圈 | **28 / 31 (90 %)** | 5 / 5 | 大多數失敗的 `raw` beat 被修好 |
 
-The all-`raw` small model lost a whole clip to a `SyntaxError` (it packed an entire beat onto one line) — exactly the raw-heavy failure mode `CLAUDE.md` documents for sub-35B models; the repair loop recovered it. The larger model leaned on components more, started higher, and even its leftover failures were mostly `raw` beats the repair loop couldn't fix in three tries. A bigger component-using model (nemotron-3-super class) clears 87–100 % on the same harness with no repair at all.
+全 `raw` 的小模型有一整個 clip 因 `SyntaxError` 掉了（它把一整個 beat 擠在同一行）—— 正是 `CLAUDE.md` 對 35B 以下模型記載的 raw-heavy 失敗模式；修復迴圈把它救了回來。較大的模型較常挑用元件、起點較高，連殘餘的失敗也大多是修復迴圈三次都修不動的 `raw` beat。更大、會挑用元件的模型（nemotron-3-super 等級）在同一套 harness 上不靠修復就能達 87–100 %。
 
-> **Where the repair loop runs.** The deployed web service applies it to every `raw` beat **automatically** — there is no UI toggle, so the **+ repair loop** rows above are also what the service produces out of the box (and what an agent gets when it submits a spec via `--remote`). `run_pipeline(..., repair=True)` is the in-process equivalent. The **local** `manim-skill bundle` / `render` CLI deliberately does **not** repair: on the agent path the agent itself is the repair loop — it reads the traceback, rewrites the spec, and re-renders. So the plain **no repair** rows above are exactly what local `manim-skill bundle` gives you.
+> **修復迴圈在哪裡跑。** 部署的 web 服務對每個 `raw` beat **自動套用**——沒有 UI 開關，所以上表的 **+ 修復迴圈** 列也就是服務開箱即得的結果（agent 透過 `--remote` 提交 spec 時同樣會被服務端自動修復）。`run_pipeline(..., repair=True)` 是 in-process 的對應。**本地** 的 `manim-skill bundle` / `render` CLI 則刻意**不**修復：在 agent 路徑上，agent 本身就是修復迴圈——它讀 traceback、改 spec、重渲染。所以上表的 **無修復** 列正是本地 `manim-skill bundle` 會給你的結果。
 
-**Agent path (no LLM).** The agent wrote the same five concepts as **component** specs — `TextBeat`, `PipelineDiagram`, `GraphBeat`, `TableBeat`, `PlotEvolution` — and rendered them locally:
+**Agent 路徑（無 LLM）。** 由 agent 把相同的五個概念寫成 **元件** spec — `TextBeat`、`PipelineDiagram`、`GraphBeat`、`TableBeat`、`PlotEvolution` — 並在本地渲染：
 
 ```bash
 manim-skill validate out/orca-agent/spec_00.json    # OK: 3 beat(s)
 manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.zip
 ```
 
-Result: **15 / 15 beats, 5 / 5 clips** (4.8 MB zip), no repair needed. Choosing components by hand gives every beat the shared theme and a safe layout by construction, so nothing is lost to malformed code.
+結果：**15 / 15 個 beat、5 / 5 個 clip**（4.8 MB zip），完全不需修復。手動挑元件讓每個 beat 天生就帶有共用主題與安全版面，所以不會有任何東西因為程式碼壞掉而消失。
 
-#### Example output — the same paper, three ways
+#### 範例輸出 — 同一篇論文、三種來源
 
-All clips below are medium quality (720p30), no repair. The agent path (hand-picked components) is uniformly clean; the two LLM-driven backends are more uneven, so for each model two of its stronger clips and one weaker one are shown.
+以下所有 clip 皆為 medium 畫質（720p30）、未經修復。agent 路徑（手挑元件）一致地乾淨；兩個 LLM 驅動的 backend 則參差不齊，所以每個模型各放兩個較好的 clip 和一個較差的。
 
-**Agent path** — hand-written component specs, **15/15 beats**:
+**Agent 路徑** — 手寫元件 spec，**15/15 個 beat**：
 
-| Iteration-level scheduling | End-to-end performance gain | System architecture |
+| 迭代層級排程 | 端到端效能提升 | 系統架構 |
 |:---:|:---:|:---:|
-| ![Iteration-level scheduling](docs/examples/orca/iteration-level-scheduling.gif) | ![End-to-end performance gain](docs/examples/orca/end-to-end-performance-gain.gif) | ![ORCA system architecture](docs/examples/orca/system-architecture.gif) |
+| ![迭代層級排程](docs/examples/orca/iteration-level-scheduling.gif) | ![端到端效能提升](docs/examples/orca/end-to-end-performance-gain.gif) | ![ORCA 系統架構](docs/examples/orca/system-architecture.gif) |
 | `PipelineDiagram` | `TableBeat` + `PlotEvolution` | `GraphBeat` |
 
-**`nemotron-3-nano-30b-a3b`** (< 35B, free) — every beat hand-written as `raw`, **10/17 beats**:
+**`nemotron-3-nano-30b-a3b`**（< 35B、免費）— 每個 beat 都手寫成 `raw`，**10/17 個 beat**：
 
-| ✅ System architecture | ✅ Performance gain | ⚠️ Pipeline parallelism |
+| ✅ 系統架構 | ✅ 效能提升 | ⚠️ 管線平行 |
 |:---:|:---:|:---:|
-| ![nemotron architecture](docs/examples/orca/nemotron-architecture.gif) | ![nemotron performance](docs/examples/orca/nemotron-performance.gif) | ![nemotron pipeline](docs/examples/orca/nemotron-pipeline-poor.gif) |
-| 5/5 beats, clean boxes | the "36×" result lands | 1/3 beats — labels collide (no safe layout) |
+| ![nemotron 架構](docs/examples/orca/nemotron-architecture.gif) | ![nemotron 效能](docs/examples/orca/nemotron-performance.gif) | ![nemotron 管線](docs/examples/orca/nemotron-pipeline-poor.gif) |
+| 5/5 beat，方塊乾淨 | 「36×」結果有呈現 | 1/3 beat —— 標籤重疊（沒有安全版面） |
 
-**`gemma-4-31b-it`** (< 35B, free) — mixed component + `raw`, **25/31 beats**:
+**`gemma-4-31b-it`**（< 35B、免費）— 元件 + `raw` 混合，**25/31 個 beat**：
 
-| ✅ Model partitioning | ✅ Selective batching | ⚠️ Performance gain |
+| ✅ 模型切分 | ✅ Selective batching | ⚠️ 效能提升 |
 |:---:|:---:|:---:|
-| ![gemma partitioning](docs/examples/orca/gemma-partitioning.gif) | ![gemma batching](docs/examples/orca/gemma-batching.gif) | ![gemma performance](docs/examples/orca/gemma-performance-poor.gif) |
-| bullets + a clean GPU pipeline | split → attention → merge | 2/4 beats — sparse, ragged bar chart |
+| ![gemma 切分](docs/examples/orca/gemma-partitioning.gif) | ![gemma batching](docs/examples/orca/gemma-batching.gif) | ![gemma 效能](docs/examples/orca/gemma-performance-poor.gif) |
+| 條列 + 乾淨的 GPU 管線 | 合併 → attention → 再合併 | 2/4 beat —— 稀疏、凌亂的長條圖 |
 
-That contrast *is* the design thesis: components are robust; free-form `raw` code from a small model is fragile, but the repair loop buys back most of the difference. When an LLM drives the backend path, prefer a mid/large model that picks components — and turn on the repair loop for the `raw` beats it does write.
+這個對比正是整套設計的核心論點：元件穩健、小模型自由發揮的 `raw` 程式碼脆弱，但修復迴圈能買回大半差距。當由 LLM 驅動 backend 路徑時，優先選會挑用元件的中大型模型 —— 並為它確實寫出的 `raw` beat 開啟修復迴圈。
 
-## The scene spec
+## Scene spec
 
-A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beats`. Each beat is either a **component** (a name + `params` matching that component's schema) or a **`raw` beat** (a `code` string of manim Python, where the scene is `self`).
+一份 scene spec 是一個 JSON 物件：一個 `title`、一個 `aspect_ratio`、和一串 `beats`。每個 beat 不是一個**元件**（元件名稱 + 符合該元件 schema 的 `params`），就是一個 **`raw` beat**（一段 manim Python 的 `code` 字串，場景即 `self`）。
 
 ```json
 {
@@ -175,38 +175,38 @@ A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beat
 }
 ```
 
-## Components
+## 元件
 
-The library ships 18 components. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
+元件庫內含 18 個元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
 
-| Component | For |
-|-----------|-----|
-| `CodeWalkthrough` | code with line highlighting |
-| `NeuralNetDiagram` | layered nodes + connections |
-| `AttentionFlow` | token sequence + attention weights |
-| `MatrixOp` | matrix multiply / transpose / reshape |
-| `PlotEvolution` | a numeric series as a line graph |
-| `FunctionPlot` | y = f(x) on labeled axes (sigmoid/tanh/loss curves/…) |
-| `HeatmapBeat` | a 2D array as a colored grid (attention / confusion matrices) |
-| `PipelineDiagram` | linear labeled boxes + arrows |
-| `GraphBeat` | arbitrary nodes + edges (directed or undirected), pick a layout |
-| `TableBeat` | paper-style results table, optional cell highlight |
-| `OptimizationPath` | dot follows f(x) curve toward a minimum, leaves a trace |
-| `FormulaBreakdown` | a LaTeX formula |
-| `FormulaWalkthrough` | a LaTeX formula whose parts get boxed + captioned step by step |
-| `GeometryAnim` | basic shapes + transforms |
-| `TextBeat` | title cards / captions / bullet lists |
-| `SectionDivider` | a numbered section / chapter title card |
-| `TokenSequence` | a row of generation tokens (autoregressive decoding) |
-| `TwoColumn` | two labeled columns side by side, for comparisons |
+| 元件 | 用途 |
+|------|------|
+| `CodeWalkthrough` | 程式碼，含逐行高亮 |
+| `NeuralNetDiagram` | 分層節點 + 連線 |
+| `AttentionFlow` | token 序列 + 注意力權重 |
+| `MatrixOp` | 矩陣相乘 / 轉置 / reshape |
+| `PlotEvolution` | 把數值序列畫成折線圖 |
+| `FunctionPlot` | y = f(x) 帶座標軸（sigmoid / tanh / loss 曲線 …） |
+| `HeatmapBeat` | 2D 陣列彩色熱圖（attention / confusion matrix） |
+| `PipelineDiagram` | 線性標籤方塊 + 箭頭 |
+| `GraphBeat` | 任意 nodes + edges（有向或無向），可選佈局 |
+| `TableBeat` | 論文式結果表格，可標記某 cell |
+| `OptimizationPath` | 紅點沿 f(x) 曲線走向最小值，留下軌跡 |
+| `FormulaBreakdown` | LaTeX 公式 |
+| `FormulaWalkthrough` | LaTeX 公式逐段框選 + 加註解 |
+| `GeometryAnim` | 基本形狀 + 變換 |
+| `TextBeat` | 標題卡 / 字幕 / 條列 |
+| `SectionDivider` | 有編號的章節標題卡 |
+| `TokenSequence` | 一排生成 token（自回歸解碼） |
+| `TwoColumn` | 左右兩欄並排，用於對照 |
 
-Adding a component is a single file in `manim_skill/components/` — it is auto-discovered, and the catalog and skill docs update automatically.
+新增一個元件只需要在 `manim_skill/components/` 放一個檔案——會被自動探索，目錄與 skill 文件也會自動更新。
 
-CJK note: the docker image bundles Noto CJK, so plain-text components (TextBeat, PipelineDiagram labels, captions, anything that flows through manim's Pango `Text()`) render Chinese / Japanese / Korean. LaTeX (`FormulaBreakdown.formula`, raw `Tex` / `MathTex`) is English-only — keep formulas pure math and put localized text in the title and caption fields.
+中文渲染：docker image 已內建 Noto CJK，所有走 manim Pango `Text()` 的路徑（TextBeat、PipelineDiagram label、caption 等）都能正確渲染繁體 / 簡體中文 / 日韓字。LaTeX 路徑（`FormulaBreakdown.formula`、raw `Tex` / `MathTex`）目前**只支援英文**——公式內請保持純數學，中文放到 title / caption 即可。
 
-## Architecture
+## 架構
 
-Two consumer paths produce or consume the same **scene spec** and share one render backend:
+兩條消費路徑都生產或消費同一份 **scene spec**,並共用同一個 render backend:
 
 ```mermaid
 flowchart TB
@@ -235,38 +235,39 @@ flowchart TB
     STITCH --> ZIP["output.zip + manifest.json"]
 ```
 
-- **Web path** — Streamlit → `backend_client` → the FastAPI job API → Redis/RQ → worker. It is **two independent jobs**: an `analyze` job, then (after the human review checkpoint, which lives in the Streamlit session) a `render` job that runs `generate_spec` (`mode=codegen`) then `render_batch`.
-- **Agent path** — the agent writes the spec itself (no LLM); the CLI renders it locally, or (`--remote`) submits it to the same API as a `mode=spec` render job.
+- **Web 路徑** — Streamlit → `backend_client` → FastAPI job API → Redis/RQ → worker。是**兩個獨立 job**:先一個 `analyze` job,再(經過存在於 Streamlit session 的人工審查檢查點後)一個 `render` job,跑 `generate_spec`(`mode=codegen`)再 `render_batch`。
+- **Agent 路徑** — agent 自己寫 spec(不經 LLM);CLI 在本地渲染,或(`--remote`)把 spec 當 `mode=spec` 的 render job 送到同一個 API。
 
-Strictly one-directional layers:
+嚴格的單向分層：
 
 ```
-spec/         scene spec schema (Pydantic), lenient JSON parsing, validation
-components/   the component library (auto-discovered, schema-bearing)
-builder/      turns a spec into a manim Scene
-render/       Docker-backed render backend — per-beat parallel render → stitch → gif → zip
-llm/          the LLM half — model-agnostic client, analyze, codegen, repair loop, pipeline
-service/      FastAPI job API + RQ worker + Redis-backed job store (the deployed backend)
-frontend/     the Streamlit web UI
-backend_client.py   HTTP client for the job API — shared by the CLI's remote mode and the frontend
-cli.py        the manim-skill CLI
+spec/         scene spec schema（Pydantic）、寬鬆 JSON 解析、驗證
+components/   元件庫（自動探索、自帶 schema）
+builder/      把一份 spec 轉成 manim Scene
+render/       Docker 渲染後端 — 逐 beat 平行渲染 → stitch → gif → zip
+llm/          LLM 半邊 — model-agnostic client、analyze、codegen、repair loop、pipeline
+service/      FastAPI job API + RQ worker + Redis-backed job store（部署的後端）
+frontend/     Streamlit Web 介面
+backend_client.py   job API 的 HTTP client — CLI 的 remote mode 與前端共用
+cli.py        manim-skill CLI
 ```
 
-The render backend renders each beat independently in its own sandboxed container, in parallel, with graceful per-beat / per-clip failure handling. The service backend turns that into an async job API; the Streamlit frontend and the CLI's remote mode are both thin clients of it. The whole thing deploys as one universal Docker image via docker-compose.
+渲染後端把每個 beat 在各自的沙箱容器內獨立、平行渲染，並對 beat / clip 層級的失敗做優雅處理。服務後端把它包成一個非同步的 job API；Streamlit 前端與 CLI 的 remote mode 都是它的薄 client。整個系統以一個通用 Docker image 透過 docker-compose 部署。
 
-See `docs/architecture.md` for the full architecture (runtime diagram + layers + render backend + service), `CLAUDE.md` for the working conventions, `docs/superpowers/` for the design specs and implementation plans, and `DEPLOY.md` for deployment.
+完整架構見 `docs/architecture.zh-TW.md`（runtime 流程圖 + 分層 + render 後端 + service），工作慣例見 `CLAUDE.md`，設計規格與實作計畫見 `docs/superpowers/`，部署見 `DEPLOY.md`。
 
-## Development
+## 開發
 
 ```bash
-pytest -m "not docker"     # fast suite, no Docker
-pytest                     # full suite incl. Docker integration tests
+pytest -m "not docker"     # 快速套件，不需 Docker
+pytest                     # 完整套件，含 Docker 整合測試
 ```
 
-The whole `llm/` layer and the `service/` backend are tested with fakes (`FakeLLMClient`, `fakeredis`) — no live LLM or Redis is needed for the fast suite. Docker-marked tests require Docker running and the `manim-skill:latest` image built; rebuild that image after changing anything a render touches.
+整個 `llm/` 層與 `service/` 後端都用假件測試（`FakeLLMClient`、`fakeredis`）——快速套件不需要真實 LLM 或 Redis。標 docker 的測試需要 Docker 運行中且 `manim-skill:latest` image 已建置；改了任何會被渲染碰到的東西後要重建該 image。
 
-### Live eval against a real LLM
+### 對真實 LLM 的活體評估
 
-`scripts/eval/run_smoke.py` points `OpenAIClient` at any OpenAI-compatible endpoint (here: OpenRouter free models) and exercises the LLM half — `analyze` / `codegen` / full pipeline — on the materials in `tests/realworld-test/` (a code snippet; the paper/report inputs aren't shipped with the repo). Two stages report per-concept success and dump the validated specs; `scripts/eval/render_specs.py` then renders them and reports per-beat results. `scripts/eval/bundle_specs.py` takes any directory of validated specs and renders them as one `render_batch`, producing a single zip + `manifest.json` — the natural end-to-end deliverable; pass `--repair --model <slug>` to re-ask the LLM to fix `raw` beats that fail (pair with `--max-workers 1` on a rate-limited free endpoint).
+`scripts/eval/run_smoke.py` 把 `OpenAIClient` 指向任何 OpenAI 相容 endpoint（例：OpenRouter free 模型），用 `tests/realworld-test/` 內的素材（一段 attention 程式碼;論文/報告等輸入素材未隨 repo 提供）實際跑 LLM 半邊——`analyze` / `codegen` / 完整 pipeline——按 concept 報成功率並 dump 出已驗證的 spec；`scripts/eval/render_specs.py` 接著把這些 spec 一支一個 zip 渲染、按 beat 報結果；`scripts/eval/bundle_specs.py` 把一個目錄底下所有 `spec_*.json` 一次過送進 `render_batch`，產出單一 zip + `manifest.json`——這是最自然的「end-to-end 交付物」；加上 `--repair --model <slug>` 可在 `raw` beat 渲染失敗時重問 LLM 修復（在有限速的免費 endpoint 上搭配 `--max-workers 1`）。
 
-This is the harness the design doc deferred. A round against `nvidia/nemotron-3-super-120b-a12b:free` surfaced five raw-beat failure modes the LLM kept hitting (Scene-class wrappers, no `self.play` calls, double-escaped `\n` in JSON, cross-beat variable references, and the LaTeX sibling case) — each is now an explicit DO/DO NOT in the codegen system prompt, locked in by `tests/llm/test_codegen.py`. Re-running the broken concepts under the tightened prompt took beat-level render success from **58% → 93%**. A full end-to-end run on a Chinese DLM research report (not shipped with the repo; 64K chars → 5 concepts → 5 validated specs → 24 beats) hit **87.5 % beat success** and produced a 7.1 MB combined bundle.
+這就是設計文件預留的活體評估 harness。對 `nvidia/nemotron-3-super-120b-a12b:free` 跑一輪,發現了 5 種 LLM 反覆踩到的 raw beat 失敗模式（Scene class 包裹、沒呼叫 `self.play`、JSON 把 `\n` 雙重 escape、引用其他 beat 變數,以及 LaTeX 的同類錯誤）——這 5 條現在都是 codegen system prompt 裡明確的 DO/DO NOT,由 `tests/llm/test_codegen.py` 鎖死。把破掉的 concept 用緊化過的 prompt 重跑,beat 層級渲染成功率從 **58% → 93%**。對一份中文 DLM 研究報告（未隨 repo 提供;64K 字 → 5 concepts → 5 validated specs → 24 beats）跑一次 e2e，達 **87.5% beat 成功率**，產出 7.1 MB 合輯。
+
