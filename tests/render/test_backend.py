@@ -127,6 +127,7 @@ def test_render_batch_uses_cache_to_skip_rendering(tmp_path, monkeypatch):
 
     assert batch2.clip_jobs[0].status == JobStatus.DONE
     assert batch2.clip_jobs[0].beat_jobs[0].status == JobStatus.DONE
+    assert batch2.clip_jobs[0].beat_jobs[0].tier == "cached"
 
 
 def test_render_batch_propagates_quality_to_renderer(tmp_path, monkeypatch):

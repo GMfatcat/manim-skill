@@ -196,7 +196,9 @@ def render_batch(
         for clip, per_clip in zip(clip_jobs, metrics["per_clip"])
     ]
     batch.zip_path = bundle_clips(
-        entries, workdir / "output.zip", summary=metrics
+        entries,
+        workdir / "output.zip",
+        summary={k: v for k, v in metrics.items() if k != "per_clip"},
     )
     batch.status = (
         JobStatus.DONE

@@ -38,6 +38,7 @@ except (AttributeError, OSError):
     pass
 
 from manim_skill.render.backend import render_batch
+from manim_skill.render.metrics import compute_tier_metrics, format_tier_line
 from manim_skill.spec.parse import parse_spec_text
 from manim_skill.spec.validate import validate_spec
 
@@ -146,8 +147,6 @@ def main() -> None:
             f"  [{i}] {clip.spec.title}: {ok}/{len(clip.beat_jobs)} beats, "
             f"status={clip.status.value}"
         )
-    from manim_skill.render.metrics import compute_tier_metrics, format_tier_line
-
     print(format_tier_line(compute_tier_metrics(batch)))
     if batch.over_quota:
         print(
