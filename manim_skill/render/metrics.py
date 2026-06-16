@@ -56,3 +56,15 @@ def compute_tier_metrics(batch: BatchJob) -> dict:
         "free_tier_rate": round(free_tier_rate, 4),
         "per_clip": per_clip,
     }
+
+
+def format_tier_line(metrics: dict) -> str:
+    """One-line human summary of a tier-metrics dict for CLI output."""
+    counts = ", ".join(
+        f"{tier}={n}" for tier, n in sorted(metrics["tier_counts"].items())
+    )
+    return (
+        f"tiers: {counts}  "
+        f"free={metrics['free_tier_rate'] * 100:.0f}%  "
+        f"escalation={metrics['escalation_rate'] * 100:.0f}%"
+    )

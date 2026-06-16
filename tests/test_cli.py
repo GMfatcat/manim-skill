@@ -456,3 +456,19 @@ def test_demo_command_prompts_when_not_yes(tmp_path, monkeypatch):
     ])
     assert rc == 0
     assert len(prompts) >= 1  # at least one pause for review
+
+
+from manim_skill.render import metrics as metrics_mod
+
+
+def test_format_tier_line_reports_distribution_and_rates():
+    line = metrics_mod.format_tier_line(
+        {
+            "tier_counts": {"generated": 3, "unresolved": 1},
+            "free_tier_rate": 0.75,
+            "escalation_rate": 0.25,
+        }
+    )
+    assert "generated" in line
+    assert "75%" in line
+    assert "25%" in line

@@ -15,6 +15,7 @@ from manim_skill.llm.codegen import CodegenError, generate_spec
 from manim_skill.llm.input_prep import prepare_input
 from manim_skill.render.backend import render_batch
 from manim_skill.render.jobs import JobStatus
+from manim_skill.render.metrics import compute_tier_metrics, format_tier_line
 from manim_skill.skill_docs import generate_skill_docs
 from manim_skill.spec.parse import SpecParseError, parse_spec_text
 from manim_skill.spec.validate import SpecValidationError, validate_spec
@@ -220,6 +221,7 @@ def _cmd_bundle(args) -> int:
             f"  [{i}] {clip.spec.title}: {ok_beats}/{total} beats, "
             f"status={clip.status.value}"
         )
+    print(format_tier_line(compute_tier_metrics(batch)))
     if batch.zip_path:
         print(f"zip: {batch.zip_path}")
     return 0

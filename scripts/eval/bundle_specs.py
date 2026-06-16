@@ -89,6 +89,12 @@ def main() -> None:
     parser.add_argument("--model", help="LLM slug for --repair (required with --repair)")
     parser.add_argument("--max-attempts", type=int, default=3)
     parser.add_argument(
+        "--escalation-quota",
+        type=float,
+        default=None,
+        help="warn if the unresolved (escalation) beat rate exceeds this fraction, e.g. 0.1",
+    )
+    parser.add_argument(
         "--base-url",
         default=_DEFAULT_BASE_URL,
         help=f"OpenAI-compatible endpoint for --repair (default {_DEFAULT_BASE_URL})",
@@ -127,6 +133,7 @@ def main() -> None:
         repairer=repairer,
         quality=args.quality,
         max_workers=args.max_workers,
+        escalation_quota=args.escalation_quota,
     )
 
     print(f"\nbatch status: {batch.status.value}")
@@ -138,6 +145,14 @@ def main() -> None:
         print(
             f"  [{i}] {clip.spec.title}: {ok}/{len(clip.beat_jobs)} beats, "
             f"status={clip.status.value}"
+        )
+    from manim_skill.render.metrics import compute_tier_metrics, format_tier_line
+
+    print(format_tier_line(compute_tier_metrics(batch)))
+    if batch.over_quota:
+        print(
+            "WARNING: escalation rate over quota — strengthen the contract "
+            "(add components / repair rules) before the next batch"
         )
     print(f"\nTOTAL: {total_ok}/{total} beats")
     print(f"zip:   {batch.zip_path}")
