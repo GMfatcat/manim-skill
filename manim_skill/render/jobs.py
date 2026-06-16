@@ -20,6 +20,7 @@ class BeatJob:
     status: JobStatus = JobStatus.QUEUED
     mp4_path: Path | None = None
     error: str | None = None
+    tier: str | None = None
 
 
 @dataclass
