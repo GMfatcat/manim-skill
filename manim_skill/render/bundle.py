@@ -12,6 +12,7 @@ class BundleEntry:
     mp4_path: Path | None
     gif_path: Path | None
     status: str
+    tier_counts: dict | None = None
 
 
 def _safe_name(name: str) -> str:
@@ -21,23 +22,28 @@ def _safe_name(name: str) -> str:
     return cleaned[:40] or "concept"
 
 
-def bundle_clips(entries: list[BundleEntry], output_zip) -> Path:
+def bundle_clips(entries: list[BundleEntry], output_zip, summary: dict | None = None) -> Path:
     """Bundle per-concept mp4 + gif into one zip with a manifest.json.
 
     Each concept gets its own folder (`NN_<safe-name>/`). Missing or
     failed-clip files are simply omitted; the manifest records the
-    status and which files made it in.
+    status, which files made it in, and the per-concept tier counts. A
+    batch `summary` (cost-tier metrics) is embedded at the top level when
+    provided.
     """
     output_zip = Path(output_zip).resolve()
     output_zip.parent.mkdir(parents=True, exist_ok=True)
 
     manifest: dict = {"concepts": []}
+    if summary is not None:
+        manifest["summary"] = summary
     with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zf:
         for index, entry in enumerate(entries):
             folder = f"{index:02d}_{_safe_name(entry.concept)}"
             record: dict = {
                 "concept": entry.concept,
                 "status": entry.status,
+                "tier_counts": entry.tier_counts or {},
                 "files": [],
             }
             for path in (entry.mp4_path, entry.gif_path):

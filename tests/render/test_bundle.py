@@ -59,3 +59,38 @@ def test_bundle_creates_missing_output_dir(tmp_path):
     entries = [BundleEntry(concept="A", mp4_path=mp4, gif_path=None, status="done")]
     zip_path = bundle_clips(entries, tmp_path / "deep" / "nested" / "b.zip")
     assert zip_path.exists()
+
+
+def test_bundle_clips_embeds_summary_and_tier_counts(tmp_path):
+    mp4 = tmp_path / "clip.mp4"
+    mp4.write_bytes(b"\x00mp4")
+    gif = tmp_path / "clip.gif"
+    gif.write_bytes(b"\x00gif")
+
+    entry = BundleEntry(
+        concept="Concept A",
+        mp4_path=mp4,
+        gif_path=gif,
+        status="done",
+        tier_counts={"generated": 2, "deterministic": 1},
+    )
+    summary = {"total_beats": 3, "escalation_rate": 0.0, "free_tier_rate": 1.0}
+
+    out = bundle_clips([entry], tmp_path / "out.zip", summary=summary)
+
+    with zipfile.ZipFile(out) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    assert manifest["summary"] == summary
+    assert manifest["concepts"][0]["tier_counts"] == {
+        "generated": 2,
+        "deterministic": 1,
+    }
+
+
+def test_bundle_clips_summary_omitted_when_none(tmp_path):
+    entry = BundleEntry(concept="C", mp4_path=None, gif_path=None, status="failed")
+    out = bundle_clips([entry], tmp_path / "out.zip")
+    with zipfile.ZipFile(out) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    assert "summary" not in manifest
+    assert manifest["concepts"][0]["tier_counts"] == {}
