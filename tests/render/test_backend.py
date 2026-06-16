@@ -220,3 +220,58 @@ def test_render_batch_tier_model_repaired_when_repairer_fixes(
     specs = [SceneSpec(title="C", beats=[Beat(component="raw", code="broken")])]
     batch = render_batch(specs, tmp_path, repairer=_FakeRepairer())
     assert batch.clip_jobs[0].beat_jobs[0].tier == "model_repaired"
+
+
+def test_render_batch_sets_escalation_rate_and_over_quota_flag(
+    tmp_path, monkeypatch
+):
+    calls = {"n": 0}
+
+    def flaky_render(spec, workdir, *, quality="medium"):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RenderError("boom")
+        return _fake_render_spec_to_mp4(spec, workdir)
+
+    _patch_docker_fns(monkeypatch, render_fn=flaky_render)
+    specs = [
+        SceneSpec(
+            title="C",
+            beats=[
+                Beat(component="raw", code="bad"),
+                Beat(component="raw", code="ok"),
+            ],
+        )
+    ]
+    batch = render_batch(
+        specs, tmp_path, max_workers=1, escalation_quota=0.1
+    )
+    assert batch.escalation_rate == 0.5
+    assert batch.over_quota is True
+
+
+def test_render_batch_over_quota_false_without_quota(tmp_path, monkeypatch):
+    _patch_docker_fns(monkeypatch, render_fn=_fake_render_raises)
+    specs = [SceneSpec(title="C", beats=[Beat(component="raw", code="bad")])]
+    batch = render_batch(specs, tmp_path)  # no quota passed
+    assert batch.escalation_rate == 1.0
+    assert batch.over_quota is False
+
+
+def test_render_batch_writes_summary_into_manifest(tmp_path, monkeypatch):
+    _patch_docker_fns(monkeypatch)
+    specs = [
+        SceneSpec(
+            title="C",
+            beats=[Beat(component="raw", code="self.wait(1)")],
+        )
+    ]
+    batch = render_batch(specs, tmp_path)
+    import json
+    import zipfile
+
+    with zipfile.ZipFile(batch.zip_path) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    assert manifest["summary"]["total_beats"] == 1
+    assert manifest["summary"]["tier_counts"]["generated"] == 1
+    assert manifest["concepts"][0]["tier_counts"]["generated"] == 1

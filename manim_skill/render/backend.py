@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import functools
+import logging
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from manim_skill.llm.repair import BeatRepairer
@@ -19,6 +22,7 @@ from manim_skill.render.metrics import (
     TIER_GENERATED,
     TIER_MODEL_REPAIRED,
     TIER_UNRESOLVED,
+    compute_tier_metrics,
 )
 from manim_skill.render.queue import RenderQueue
 from manim_skill.render.stitch import stitch_mp4s
@@ -109,6 +113,7 @@ def render_batch(
     cache: BeatCache | None = None,
     repairer: "BeatRepairer | None" = None,
     quality: str = "medium",
+    escalation_quota: float | None = None,
 ) -> BatchJob:
     """Render a batch of scene specs into one zip bundle.
 
@@ -166,16 +171,33 @@ def render_batch(
             clip.status = JobStatus.FAILED
             clip.error = str(exc)
 
+    metrics = compute_tier_metrics(batch)
+    batch.escalation_rate = metrics["escalation_rate"]
+    batch.over_quota = (
+        escalation_quota is not None
+        and metrics["escalation_rate"] > escalation_quota
+    )
+    if batch.over_quota:
+        logger.warning(
+            "escalation rate %.0f%% exceeds quota %.0f%% — strengthen the "
+            "contract (add components / repair rules) before the next batch",
+            metrics["escalation_rate"] * 100,
+            escalation_quota * 100,
+        )
+
     entries = [
         BundleEntry(
             concept=clip.concept,
             mp4_path=clip.mp4_path,
             gif_path=clip.gif_path,
             status=clip.status.value,
+            tier_counts=per_clip["tier_counts"],
         )
-        for clip in clip_jobs
+        for clip, per_clip in zip(clip_jobs, metrics["per_clip"])
     ]
-    batch.zip_path = bundle_clips(entries, workdir / "output.zip")
+    batch.zip_path = bundle_clips(
+        entries, workdir / "output.zip", summary=metrics
+    )
     batch.status = (
         JobStatus.DONE
         if any(clip.status == JobStatus.DONE for clip in clip_jobs)

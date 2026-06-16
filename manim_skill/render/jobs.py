@@ -39,3 +39,5 @@ class BatchJob:
     clip_jobs: list[ClipJob]
     status: JobStatus = JobStatus.QUEUED
     zip_path: Path | None = None
+    escalation_rate: float = 0.0
+    over_quota: bool = False
