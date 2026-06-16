@@ -106,8 +106,8 @@ flowchart TB
     BUNDLE --> ZIP["output.zip + manifest.json"]
 ```
 
-`render_batch(specs, workdir, *, repairer=None, quality="medium")` 是進入點。
-Job 階層:**batch → clip（每 spec 一個）→ beat**。每個 beat 都當成獨立的
+`render_batch(specs, workdir, *, repairer=None, quality="medium", escalation_quota=None)`
+是進入點。Job 階層:**batch → clip（每 spec 一個）→ beat**。每個 beat 都當成獨立的
 1-beat spec、在自己的 docker 容器內渲染（`docker_render.render_spec_to_mp4`），
 平行到一個 worker 上限（`queue.RenderQueue`）。一個 clip 的 beat mp4 用 ffmpeg
 串接（`stitch.py`）、轉成 gif（`convert.py`），所有 clip 打包成一個 zip +
@@ -117,6 +117,12 @@ raw LLM 程式碼的安全沙箱（`--network none`、`--read-only`、資源上�
 `quality` 對應 manim 的 `-ql … -qk` 旗標（480p15 → 4K），預設 `medium`（720p30）。
 `BeatRepairer` repair loop **僅作用於 raw beat**（渲染失敗 → traceback 餵回 LLM →
 修好的程式碼 → 重試）；component beat 是確定性的、永不 repair。
+
+每個 beat 會被標記解決它的**成本層**（`deterministic` component / `generated` raw /
+`model_repaired` raw / `cached` / `unresolved`）。`render/metrics.py` 把這些彙總成
+升級率 + 免費層率，以 `summary` 嵌進 `manifest.json`；`escalation_quota` 會在未解決
+（升級）率超過門檻時標記該批。這是成本階梯框架的量測層
+（`docs/superpowers/specs/2026-06-16-agent-openmodel-cost-cascade-design.md`）。
 
 ## Service 層
 

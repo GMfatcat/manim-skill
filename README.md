@@ -252,7 +252,7 @@ backend_client.py   job API 的 HTTP client — CLI 的 remote mode 與前端共
 cli.py        manim-skill CLI
 ```
 
-渲染後端把每個 beat 在各自的沙箱容器內獨立、平行渲染，並對 beat / clip 層級的失敗做優雅處理。服務後端把它包成一個非同步的 job API；Streamlit 前端與 CLI 的 remote mode 都是它的薄 client。整個系統以一個通用 Docker image 透過 docker-compose 部署。
+渲染後端把每個 beat 在各自的沙箱容器內獨立、平行渲染，並對 beat / clip 層級的失敗做優雅處理；同時為每個 beat 標記解決它的成本層，並把成本層 `summary`（升級率 + 免費層率）寫進 manifest。服務後端把它包成一個非同步的 job API；Streamlit 前端與 CLI 的 remote mode 都是它的薄 client。整個系統以一個通用 Docker image 透過 docker-compose 部署。
 
 完整架構見 `docs/architecture.zh-TW.md`（runtime 流程圖 + 分層 + render 後端 + service），工作慣例見 `CLAUDE.md`，設計規格與實作計畫見 `docs/superpowers/`，部署見 `DEPLOY.md`。
 
@@ -267,7 +267,7 @@ pytest                     # 完整套件，含 Docker 整合測試
 
 ### 對真實 LLM 的活體評估
 
-`scripts/eval/run_smoke.py` 把 `OpenAIClient` 指向任何 OpenAI 相容 endpoint（例：OpenRouter free 模型），用 `tests/realworld-test/` 內的素材（一段 attention 程式碼;論文/報告等輸入素材未隨 repo 提供）實際跑 LLM 半邊——`analyze` / `codegen` / 完整 pipeline——按 concept 報成功率並 dump 出已驗證的 spec；`scripts/eval/render_specs.py` 接著把這些 spec 一支一個 zip 渲染、按 beat 報結果；`scripts/eval/bundle_specs.py` 把一個目錄底下所有 `spec_*.json` 一次過送進 `render_batch`，產出單一 zip + `manifest.json`——這是最自然的「end-to-end 交付物」；加上 `--repair --model <slug>` 可在 `raw` beat 渲染失敗時重問 LLM 修復（在有限速的免費 endpoint 上搭配 `--max-workers 1`）。
+`scripts/eval/run_smoke.py` 把 `OpenAIClient` 指向任何 OpenAI 相容 endpoint（例：OpenRouter free 模型），用 `tests/realworld-test/` 內的素材（一段 attention 程式碼;論文/報告等輸入素材未隨 repo 提供）實際跑 LLM 半邊——`analyze` / `codegen` / 完整 pipeline——按 concept 報成功率並 dump 出已驗證的 spec；`scripts/eval/render_specs.py` 接著把這些 spec 一支一個 zip 渲染、按 beat 報結果；`scripts/eval/bundle_specs.py` 把一個目錄底下所有 `spec_*.json` 一次過送進 `render_batch`，產出單一 zip + `manifest.json`——這是最自然的「end-to-end 交付物」；加上 `--repair --model <slug>` 可在 `raw` beat 渲染失敗時重問 LLM 修復（在有限速的免費 endpoint 上搭配 `--max-workers 1`），`--escalation-quota <frac>` 則在過多 beat 未解決時示警。bundler 與 CLI `bundle` 都會印出**成本層分布**——多少 beat 以 deterministic（元件）/ generated / repair 解決、多少未解決——並以 `summary` 嵌進 `manifest.json`。這是成本階梯框架的量測層（見 `docs/superpowers/specs/2026-06-16-agent-openmodel-cost-cascade-design.md`）。
 
 這就是設計文件預留的活體評估 harness。對 `nvidia/nemotron-3-super-120b-a12b:free` 跑一輪,發現了 5 種 LLM 反覆踩到的 raw beat 失敗模式（Scene class 包裹、沒呼叫 `self.play`、JSON 把 `\n` 雙重 escape、引用其他 beat 變數,以及 LaTeX 的同類錯誤）——這 5 條現在都是 codegen system prompt 裡明確的 DO/DO NOT,由 `tests/llm/test_codegen.py` 鎖死。把破掉的 concept 用緊化過的 prompt 重跑,beat 層級渲染成功率從 **58% → 93%**。對一份中文 DLM 研究報告（未隨 repo 提供;64K 字 → 5 concepts → 5 validated specs → 24 beats）跑一次 e2e，達 **87.5% beat 成功率**，產出 7.1 MB 合輯。
 

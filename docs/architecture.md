@@ -119,8 +119,8 @@ flowchart TB
 Failure is graceful and isolated: a failed beat is skipped, a failed clip
 doesn't stop the batch.
 
-`render_batch(specs, workdir, *, repairer=None, quality="medium")` is the
-entry point. Job hierarchy: **batch → clip (one per spec) → beat**. Each beat
+`render_batch(specs, workdir, *, repairer=None, quality="medium", escalation_quota=None)`
+is the entry point. Job hierarchy: **batch → clip (one per spec) → beat**. Each beat
 is rendered independently as a 1-beat spec in its own docker container
 (`docker_render.render_spec_to_mp4`), in parallel up to a worker cap
 (`queue.RenderQueue`). A clip's beat mp4s are concatenated with ffmpeg
@@ -133,6 +133,14 @@ maps to manim's `-ql … -qk` flags (480p15 → 4K); default `medium` (720p30).
 The `BeatRepairer` repair loop applies **only to raw beats** (render fails →
 traceback fed back to the LLM → fixed code → retry); component beats are
 deterministic and never repaired.
+
+Each beat is tagged with the **cost tier** that resolved it (`deterministic`
+component / `generated` raw / `model_repaired` raw / `cached` / `unresolved`).
+`render/metrics.py` aggregates these into an escalation rate + free-tier rate
+embedded in `manifest.json` as a `summary`; `escalation_quota` flags a batch
+whose unresolved (escalation) rate exceeds the threshold. This is the
+measurement layer of the cost-cascade framework
+(`docs/superpowers/specs/2026-06-16-agent-openmodel-cost-cascade-design.md`).
 
 ## Service layer
 
