@@ -40,6 +40,64 @@ Each component below can be used as a beat's `component` in a scene spec. A beat
   "type": "object"
 }
 
+### BarChart
+{
+  "properties": {
+    "values": {
+      "items": {
+        "type": "number"
+      },
+      "minItems": 1,
+      "title": "Values",
+      "type": "array"
+    },
+    "labels": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Labels"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "highlight": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Highlight"
+    }
+  },
+  "required": [
+    "values"
+  ],
+  "title": "BarChartParams",
+  "type": "object"
+}
+
 ### CodeWalkthrough
 {
   "properties": {
