@@ -67,6 +67,7 @@ manim-skill analyze paper.pdf --kind pdf -o out
 # Stage 2: LLM codegen for each concept; writes <workdir>/spec_NN.json
 manim-skill codegen-concepts out                    # all concepts
 manim-skill codegen-concepts out --indices 0,2,4    # subset
+manim-skill codegen-concepts out --gold-dir examples/gold   # prime codegen with gold examples (few-shot)
 
 # Stage 3: local docker render; writes <workdir>/output.zip
 manim-skill bundle out --quality high               # 1080p60
@@ -77,6 +78,8 @@ manim-skill demo paper.pdf --kind pdf -o out --yes          # skip the prompt
 ```
 
 LLM endpoint is read from `MANIM_SKILL_LLM_BASE_URL` (default `http://localhost:11434/v1`), `MANIM_SKILL_LLM_MODEL` (default `qwen3.5-35b`), and `MANIM_SKILL_LLM_API_KEY` env vars. When an agent (Claude Code, etc.) is the human-checkpoint driver, it should call `analyze` / `codegen-concepts` / `bundle` separately and run its own review UI between them.
+
+**Gold examples (few-shot).** `codegen-concepts` can be primed with curated `{tags, spec}` files under `examples/gold/`: for each concept the 1–2 with the best topical tag-overlap are injected as reference specs, nudging a small model to imitate good component-based structure instead of fragile `raw` code. Opt-in via `--gold-dir` (default `examples/gold`; a missing directory simply means no examples). This is the cost-cascade framework's L1 quality lever — see `docs/superpowers/specs/2026-06-17-golden-examples-design.md`.
 
 ### Web pipeline in Python
 
@@ -245,7 +248,7 @@ spec/         scene spec schema (Pydantic), lenient JSON parsing, validation
 components/   the component library (auto-discovered, schema-bearing)
 builder/      turns a spec into a manim Scene
 render/       Docker-backed render backend — per-beat parallel render → stitch → gif → zip
-llm/          the LLM half — model-agnostic client, analyze, codegen, repair loop, pipeline
+llm/          the LLM half — model-agnostic client, analyze, codegen, gold-example few-shot, repair loop, pipeline
 service/      FastAPI job API + RQ worker + Redis-backed job store (the deployed backend)
 frontend/     the Streamlit web UI
 backend_client.py   HTTP client for the job API — shared by the CLI's remote mode and the frontend

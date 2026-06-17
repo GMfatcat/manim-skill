@@ -62,8 +62,8 @@ builder/      SpecScene（渲染一份 spec 的 beats 的 MovingCameraScene）�
               raw-beat exec、主題背景、camera
 render/       Docker 渲染後端 — 逐 beat 平行渲染 → stitch → gif → zip、
               content-hash 快取、優雅的失敗隔離
-llm/          model-agnostic client、analyze、codegen（+ advisory lint re-ask）、
-              repair loop（僅 raw beat）、pipeline
+llm/          model-agnostic client、analyze、codegen（+ advisory lint re-ask、
+              選用黃金範例 few-shot）、repair loop（僅 raw beat）、pipeline
 service/      FastAPI job API + RQ worker + Redis-backed job store（部署的後端）
 frontend/     Streamlit Web 介面（薄薄的 5 階段狀態機）
 backend_client.py   job API 的 HTTP client — CLI 的 --remote 模式與前端共用

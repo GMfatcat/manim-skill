@@ -67,6 +67,7 @@ manim-skill analyze paper.pdf --kind pdf -o out
 # 階段 2：每個概念跑 codegen；寫 <workdir>/spec_NN.json
 manim-skill codegen-concepts out                    # 全部概念
 manim-skill codegen-concepts out --indices 0,2,4    # 只挑幾個
+manim-skill codegen-concepts out --gold-dir examples/gold   # 用黃金範例為 codegen 打底（few-shot）
 
 # 階段 3：本機 docker render；寫 <workdir>/output.zip
 manim-skill bundle out --quality high               # 1080p60
@@ -77,6 +78,8 @@ manim-skill demo paper.pdf --kind pdf -o out --yes          # 跳過 prompt
 ```
 
 LLM endpoint 從 `MANIM_SKILL_LLM_BASE_URL`（預設 `http://localhost:11434/v1`）、`MANIM_SKILL_LLM_MODEL`（預設 `qwen3.5-35b`）、`MANIM_SKILL_LLM_API_KEY` 環境變數讀。若是 agent（Claude Code 等）擔任人工確認者，建議分別呼叫 `analyze` / `codegen-concepts` / `bundle`，自己跑審核 UI。
+
+**黃金範例（few-shot）。** `codegen-concepts` 可用 `examples/gold/` 下策展的 `{tags, spec}` 檔打底：對每個概念，挑主題標籤重疊度最高的 1–2 個當參考 spec 注入,引導小模型照著挑用元件、而非寫脆弱的 `raw` 程式碼。透過 `--gold-dir` 啟用（預設 `examples/gold`；目錄不存在就等於沒範例）。這是成本階梯框架的 L1 品質槓桿——見 `docs/superpowers/specs/2026-06-17-golden-examples-design.md`。
 
 ### 在 Python 裡跑 Web pipeline
 
@@ -245,7 +248,7 @@ spec/         scene spec schema（Pydantic）、寬鬆 JSON 解析、驗證
 components/   元件庫（自動探索、自帶 schema）
 builder/      把一份 spec 轉成 manim Scene
 render/       Docker 渲染後端 — 逐 beat 平行渲染 → stitch → gif → zip
-llm/          LLM 半邊 — model-agnostic client、analyze、codegen、repair loop、pipeline
+llm/          LLM 半邊 — model-agnostic client、analyze、codegen、黃金範例 few-shot、repair loop、pipeline
 service/      FastAPI job API + RQ worker + Redis-backed job store（部署的後端）
 frontend/     Streamlit Web 介面
 backend_client.py   job API 的 HTTP client — CLI 的 remote mode 與前端共用

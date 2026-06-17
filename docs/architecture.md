@@ -67,8 +67,8 @@ builder/      SpecScene (a MovingCameraScene that renders a spec's beats),
               raw-beat exec, themed background, camera
 render/       Docker-backed render backend — per-beat parallel render → stitch
               → gif → zip, content-hash cache, graceful failure isolation
-llm/          model-agnostic client, analyze, codegen (+ advisory lint re-ask),
-              repair loop (raw beats only), pipeline
+llm/          model-agnostic client, analyze, codegen (+ advisory lint re-ask,
+              optional gold-example few-shot), repair loop (raw beats only), pipeline
 service/      FastAPI job API + RQ worker + Redis-backed job store (deployed backend)
 frontend/     the Streamlit web UI (a thin 5-stage state machine)
 backend_client.py   HTTP client for the job API — shared by the CLI's --remote
