@@ -13,6 +13,7 @@ class BundleEntry:
     gif_path: Path | None
     status: str
     tier_counts: dict | None = None
+    unresolved_beats: list[dict] | None = None
 
 
 def _safe_name(name: str) -> str:
@@ -44,6 +45,7 @@ def bundle_clips(entries: list[BundleEntry], output_zip, summary: dict | None = 
                 "concept": entry.concept,
                 "status": entry.status,
                 "tier_counts": entry.tier_counts or {},
+                "unresolved_beats": entry.unresolved_beats or [],
                 "files": [],
             }
             for path in (entry.mp4_path, entry.gif_path):

@@ -94,3 +94,30 @@ def test_bundle_clips_summary_omitted_when_none(tmp_path):
         manifest = json.loads(zf.read("manifest.json"))
     assert "summary" not in manifest
     assert manifest["concepts"][0]["tier_counts"] == {}
+
+
+def test_bundle_clips_records_unresolved_beats(tmp_path):
+    entry = BundleEntry(
+        concept="C",
+        mp4_path=None,
+        gif_path=None,
+        status="failed",
+        unresolved_beats=[
+            {"index": 0, "component": "raw", "caption": "bar chart",
+             "error": "boom", "code": "Rectangle()"}
+        ],
+    )
+    out = bundle_clips([entry], tmp_path / "out.zip")
+    with zipfile.ZipFile(out) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    rec = manifest["concepts"][0]
+    assert rec["unresolved_beats"][0]["caption"] == "bar chart"
+    assert rec["unresolved_beats"][0]["index"] == 0
+
+
+def test_bundle_clips_unresolved_beats_defaults_empty(tmp_path):
+    entry = BundleEntry(concept="C", mp4_path=None, gif_path=None, status="done")
+    out = bundle_clips([entry], tmp_path / "out.zip")
+    with zipfile.ZipFile(out) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    assert manifest["concepts"][0]["unresolved_beats"] == []
