@@ -180,7 +180,7 @@ manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.
 
 ## 元件
 
-元件庫內含 18 個元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
+元件庫內含 19 個元件。每個元件宣告一份 Pydantic 參數 schema——這份宣告是驗證、LLM prompt 目錄、agent skill 文件三者的單一事實來源。
 
 | 元件 | 用途 |
 |------|------|
@@ -202,6 +202,7 @@ manim-skill bundle out/orca-agent --quality medium  # → out/orca-agent/output.
 | `SectionDivider` | 有編號的章節標題卡 |
 | `TokenSequence` | 一排生成 token（自回歸解碼） |
 | `TwoColumn` | 左右兩欄並排，用於對照 |
+| `BarChart` | 帶標籤的長條圖，可選強調某一根（比較 / 吞吐量） |
 
 新增一個元件只需要在 `manim_skill/components/` 放一個檔案——會被自動探索，目錄與 skill 文件也會自動更新。
 

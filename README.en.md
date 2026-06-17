@@ -180,7 +180,7 @@ A scene spec is a JSON object: a `title`, an `aspect_ratio`, and a list of `beat
 
 ## Components
 
-The library ships 18 components. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
+The library ships 19 components. Each declares a Pydantic parameter schema — that one declaration is the single source of truth for validation, the LLM prompt catalog, and the agent skill docs.
 
 | Component | For |
 |-----------|-----|
@@ -202,6 +202,7 @@ The library ships 18 components. Each declares a Pydantic parameter schema — t
 | `SectionDivider` | a numbered section / chapter title card |
 | `TokenSequence` | a row of generation tokens (autoregressive decoding) |
 | `TwoColumn` | two labeled columns side by side, for comparisons |
+| `BarChart` | a labeled bar chart, optional highlighted bar (comparisons / throughput) |
 
 Adding a component is a single file in `manim_skill/components/` — it is auto-discovered, and the catalog and skill docs update automatically.
 

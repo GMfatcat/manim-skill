@@ -39,7 +39,7 @@ Strict one-directional layering — `spec` is pure data with no manim import; la
 
 ```
 spec/        SceneSpec/Beat schema (Pydantic), lenient JSON parse, validation
-components/  18 animation components, each: name + Params (Pydantic) + build()/animate(); @register + pkgutil auto-discovery
+components/  19 animation components, each: name + Params (Pydantic) + build()/animate(); @register + pkgutil auto-discovery
 builder/     SpecScene (a MovingCameraScene that renders a spec's beats), raw-beat exec, camera, write_render_inputs
 render/      docker-backed render backend — see below
 llm/         model-agnostic client, analyze, codegen, gold-example few-shot, repair loop, pipeline
