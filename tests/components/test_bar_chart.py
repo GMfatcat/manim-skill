@@ -24,7 +24,8 @@ def test_build_with_labels_title_highlight():
         )
     )
     assert isinstance(mobj, Mobject)
-    assert len(mobj.submobjects) > 0
+    # bars VGroup + baseline + 3 label texts + title => at least 6 direct submobjects
+    assert len(mobj.submobjects) >= 6
 
 
 def test_highlight_dims_other_bars():

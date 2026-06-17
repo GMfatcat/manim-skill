@@ -64,7 +64,7 @@ class BarChart(Component):
             for bar, name in zip(bars, params.labels):
                 diagram.add(label_text(name).next_to(bar, DOWN, buff=0.2))
         if params.title:
-            diagram.add(body_text(params.title, size=28).next_to(diagram, UP))
+            diagram.add(body_text(params.title, size=28).next_to(bars, UP))
         return diagram
 
     def animate(self, scene: Scene, mobject: Mobject, params: BarChartParams) -> None:
