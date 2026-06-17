@@ -61,3 +61,60 @@ def test_load_gold_examples_invalid_spec_raises(tmp_path):
     _write(tmp_path, "bad.json", {"tags": ["x"], "spec": {"title": "no beats"}})
     with pytest.raises(GoldExampleError, match="bad.json"):
         load_gold_examples(tmp_path)
+
+
+from manim_skill.llm.analyze import ConceptCandidate
+from manim_skill.llm.examples import select_examples
+from manim_skill.spec.schema import SceneSpec
+
+
+def _gold(name, tags):
+    spec = SceneSpec.model_validate(_VALID_SPEC)
+    return GoldExample(name=name, tags=tags, spec=spec)
+
+
+def _concept(text):
+    return ConceptCandidate(concept=text, why_suitable="", storyboard="")
+
+
+def test_select_examples_ranks_by_tag_overlap():
+    gold = [
+        _gold("pipeline", ["pipeline", "stages"]),
+        _gold("table", ["table", "results"]),
+        _gold("graph", ["graph", "nodes"]),
+    ]
+    picked = select_examples(_concept("a pipeline of stages and steps"), gold, k=2)
+    assert [e.name for e in picked] == ["pipeline"]  # only 'pipeline' overlaps
+
+
+def test_select_examples_topk_and_score_order():
+    gold = [
+        _gold("a", ["pipeline"]),               # score 1
+        _gold("b", ["pipeline", "stages"]),     # score 2
+        _gold("c", ["stages"]),                 # score 1
+    ]
+    picked = select_examples(_concept("pipeline stages flow"), gold, k=2)
+    # b (score 2) first; then a vs c tie on score 1 -> name asc -> a
+    assert [e.name for e in picked] == ["b", "a"]
+
+
+def test_select_examples_multiword_tag_needs_all_words():
+    gold = [_gold("x", ["pipeline parallelism"])]
+    assert select_examples(_concept("pipeline of stages"), gold) == []  # 'parallelism' missing
+    picked = select_examples(_concept("pipeline parallelism across gpus"), gold)
+    assert [e.name for e in picked] == ["x"]
+
+
+def test_select_examples_no_overlap_returns_empty():
+    gold = [_gold("x", ["table", "results"])]
+    assert select_examples(_concept("a graph of nodes"), gold) == []
+
+
+def test_select_examples_empty_gold_returns_empty():
+    assert select_examples(_concept("anything"), []) == []
+
+
+def test_select_examples_matches_across_all_concept_fields():
+    gold = [_gold("x", ["throughput"])]
+    c = ConceptCandidate(concept="Perf", why_suitable="", storyboard="shows throughput growth")
+    assert [e.name for e in select_examples(c, gold)] == ["x"]
