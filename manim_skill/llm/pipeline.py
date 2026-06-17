@@ -56,6 +56,10 @@ def run_pipeline(
 ) -> BatchJob:
     """Full Phase-1 web-path pipeline (minus the human checkpoint):
     input -> analyze -> codegen -> render_batch -> zip bundle.
+
+    Gold-example few-shot is intentionally not threaded here: it is a
+    CLI/agent-path lever (see `generate_specs(gold_examples=...)`), so the
+    web path runs codegen without injected examples.
     """
     specs = generate_specs(
         client, content, kind, guide_prompt=guide_prompt

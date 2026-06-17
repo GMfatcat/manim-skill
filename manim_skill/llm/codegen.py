@@ -103,8 +103,8 @@ def _build_user_prompt(
             + "\n\n"
         )
     return (
-        f"{prefix}"
-        f"Concept: {concept.concept}\n"
+        prefix
+        + f"Concept: {concept.concept}\n"
         f"Why it animates well: {concept.why_suitable}\n"
         f"Storyboard:\n{concept.storyboard}\n\n"
         "Produce the scene spec JSON for this concept."

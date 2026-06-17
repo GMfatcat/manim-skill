@@ -21,7 +21,7 @@ class GoldExample:
     spec: SceneSpec
 
 
-def load_gold_examples(directory) -> list[GoldExample]:
+def load_gold_examples(directory: Path | str) -> list[GoldExample]:
     """Load curated gold examples from a directory of {tags, spec} JSON files.
 
     Returns them sorted by file stem. A missing directory yields an empty

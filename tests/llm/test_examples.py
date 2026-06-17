@@ -1,12 +1,16 @@
 import json
+from pathlib import Path
 
 import pytest
 
+from manim_skill.llm.analyze import ConceptCandidate
 from manim_skill.llm.examples import (
     GoldExample,
     GoldExampleError,
     load_gold_examples,
+    select_examples,
 )
+from manim_skill.spec.schema import SceneSpec
 
 _VALID_SPEC = {
     "title": "Demo",
@@ -63,9 +67,10 @@ def test_load_gold_examples_invalid_spec_raises(tmp_path):
         load_gold_examples(tmp_path)
 
 
-from manim_skill.llm.analyze import ConceptCandidate
-from manim_skill.llm.examples import select_examples
-from manim_skill.spec.schema import SceneSpec
+def test_load_gold_examples_bad_json_raises(tmp_path):
+    (tmp_path / "bad.json").write_text("{not valid json!!}", encoding="utf-8")
+    with pytest.raises(GoldExampleError, match="bad.json"):
+        load_gold_examples(tmp_path)
 
 
 def _gold(name, tags):
@@ -84,7 +89,7 @@ def test_select_examples_ranks_by_tag_overlap():
         _gold("graph", ["graph", "nodes"]),
     ]
     picked = select_examples(_concept("a pipeline of stages and steps"), gold, k=2)
-    assert [e.name for e in picked] == ["pipeline"]  # only 'pipeline' overlaps
+    assert [e.name for e in picked] == ["pipeline"]  # only 'pipeline' gold overlaps (others score 0)
 
 
 def test_select_examples_topk_and_score_order():
@@ -118,9 +123,6 @@ def test_select_examples_matches_across_all_concept_fields():
     gold = [_gold("x", ["throughput"])]
     c = ConceptCandidate(concept="Perf", why_suitable="", storyboard="shows throughput growth")
     assert [e.name for e in select_examples(c, gold)] == ["x"]
-
-
-from pathlib import Path
 
 
 def test_seed_gold_examples_are_valid():
