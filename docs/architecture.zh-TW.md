@@ -123,6 +123,9 @@ raw LLM 程式碼的安全沙箱（`--network none`、`--read-only`、資源上�
 升級率 + 免費層率，以 `summary` 嵌進 `manifest.json`；`escalation_quota` 會在未解決
 （升級）率超過門檻時標記該批。這是成本階梯框架的量測層
 （`docs/superpowers/specs/2026-06-16-agent-openmodel-cost-cascade-design.md`）。
+每個未解決 beat 的細節也會記進 manifest，`manim-skill backflow`（`backflow.py`）
+把跨多次 run 的這些失敗依關鍵字分群，產出候選元件報告——框架的「該補什麼」訊號
+（`docs/superpowers/specs/2026-06-17-contract-gap-backflow-design.md`）。
 
 ## Service 層
 

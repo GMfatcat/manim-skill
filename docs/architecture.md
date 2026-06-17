@@ -141,6 +141,10 @@ embedded in `manifest.json` as a `summary`; `escalation_quota` flags a batch
 whose unresolved (escalation) rate exceeds the threshold. This is the
 measurement layer of the cost-cascade framework
 (`docs/superpowers/specs/2026-06-16-agent-openmodel-cost-cascade-design.md`).
+Each unresolved beat's detail is also recorded in the manifest, and
+`manim-skill backflow` (`backflow.py`) clusters them across runs by keyword
+into a candidate-component report — the framework's "what to add" signal
+(`docs/superpowers/specs/2026-06-17-contract-gap-backflow-design.md`).
 
 ## Service layer
 
