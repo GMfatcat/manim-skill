@@ -70,3 +70,22 @@ def test_cluster_escalations_ranked_and_empty():
     assert cluster_escalations([], min_count=2) == []
     escs = [Escalation("z", "C", 0, "raw", "lonely", "unique", "boom")]
     assert cluster_escalations(escs, min_count=2) == []
+
+
+from manim_skill.backflow import Cluster, render_report
+
+
+def test_render_report_lists_patterns():
+    clusters = [
+        Cluster("bar", 3, [Escalation("z", "Perf", 0, "raw", "a bar chart", "bars", "e")])
+    ]
+    report = render_report(clusters, total=5, runs=2)
+    assert "Contract-gap report" in report
+    assert "5 unresolved" in report
+    assert "**bar** (3" in report
+    assert "a bar chart" in report
+
+
+def test_render_report_no_gaps():
+    report = render_report([], total=0, runs=0)
+    assert "No recurring contract gaps found." in report

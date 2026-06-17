@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from manim_skill.backend_client import BackendClient, BackendClientError
+from manim_skill.backflow import cluster_escalations, collect_escalations, render_report
 
 from manim_skill.llm.analyze import ConceptCandidate, analyze
 from manim_skill.llm.catalog import build_component_catalog
@@ -273,6 +274,20 @@ def _cmd_gen_skill_docs(args) -> int:
     return 0
 
 
+def _cmd_backflow(args) -> int:
+    """Cluster repeated unresolved beats into candidate-component suggestions."""
+    escalations = collect_escalations(args.paths)
+    runs = len({e.source for e in escalations})
+    clusters = cluster_escalations(escalations, min_count=args.min_count)
+    report = render_report(clusters, total=len(escalations), runs=runs)
+    if args.output:
+        Path(args.output).write_text(report, encoding="utf-8")
+        print(f"backflow: wrote {args.output} ({len(clusters)} pattern(s))")
+    else:
+        print(report)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="manim-skill",
@@ -400,6 +415,23 @@ def build_parser() -> argparse.ArgumentParser:
         default="medium",
     )
     p_demo.set_defaults(func=_cmd_demo)
+
+    p_backflow = sub.add_parser(
+        "backflow",
+        help="cluster repeated unresolved beats into candidate-component suggestions",
+    )
+    p_backflow.add_argument(
+        "paths", nargs="+", help="dirs (scanned for output.zip) or zip files"
+    )
+    p_backflow.add_argument(
+        "--min-count", type=int, default=2,
+        help="minimum recurrences for a pattern to be reported (default 2)",
+    )
+    p_backflow.add_argument(
+        "-o", "--output", default=None,
+        help="write the markdown report to a file instead of stdout",
+    )
+    p_backflow.set_defaults(func=_cmd_backflow)
 
     return parser
 
