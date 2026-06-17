@@ -1,0 +1,12 @@
+{
+  "tags": ["pipeline", "stages", "flow", "sequence", "scheduling", "iteration", "steps", "loop"],
+  "spec": {
+    "title": "Iteration-Level Scheduling",
+    "aspect_ratio": "16:9",
+    "beats": [
+      {"component": "TextBeat", "params": {"text": "Iteration-Level Scheduling", "subtitle": "one step at a time", "style": "title"}, "duration": 2.0},
+      {"component": "PipelineDiagram", "params": {"title": "One model iteration at a time", "stages": ["Request pool", "Scheduler picks batch", "Engine runs 1 iteration", "Emit 1 token", "Return done / reschedule"]}, "duration": 5.0},
+      {"component": "TextBeat", "params": {"text": "Why it matters", "style": "bullets", "bullets": ["Schedule at iteration granularity, not whole requests", "Finished requests return immediately", "New requests join the next iteration"]}, "duration": 4.0}
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "tags": ["architecture", "graph", "components", "nodes", "system", "dataflow", "loop", "pipeline", "scheduler", "engine"],
+  "spec": {
+    "title": "System Architecture",
+    "aspect_ratio": "16:9",
+    "beats": [
+      {"component": "TextBeat", "params": {"text": "System Architecture", "subtitle": "where the pieces sit", "style": "title"}, "duration": 2.0},
+      {"component": "GraphBeat", "params": {"title": "The end-to-end serving loop", "nodes": ["Clients", "Endpoint", "Request pool", "Scheduler", "Execution engine"], "edges": [["Clients", "Endpoint"], ["Endpoint", "Request pool"], ["Request pool", "Scheduler"], ["Scheduler", "Execution engine"], ["Execution engine", "Scheduler"], ["Scheduler", "Clients"]], "directed": true, "layout": "circular"}, "duration": 5.0},
+      {"component": "TextBeat", "params": {"text": "How a request flows", "style": "bullets", "bullets": ["Requests enter a shared pool", "The scheduler picks a batch each step", "The engine runs one iteration, then yields", "Finished results stream back"]}, "duration": 4.5}
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "tags": ["table", "comparison", "results", "benchmark", "throughput", "performance", "metrics", "speedup", "latency"],
+  "spec": {
+    "title": "End-to-End Performance Gain",
+    "aspect_ratio": "16:9",
+    "beats": [
+      {"component": "TextBeat", "params": {"text": "End-to-End Performance Gain", "subtitle": "baseline vs improved", "style": "title"}, "duration": 2.0},
+      {"component": "TableBeat", "params": {"title": "Same latency budget, far more throughput", "headers": ["Throughput (req/s)", "Tail latency"], "row_labels": ["Baseline", "Ours"], "rows": [["1x (baseline)", "spikes under load"], ["36.9x", "stays flat"]], "highlight_cells": [[1, 0]]}, "duration": 4.5},
+      {"component": "PlotEvolution", "params": {"title": "Throughput scales with load", "series": [1, 4, 9, 18, 28, 36.9]}, "duration": 4.0}
+    ]
+  }
+}

@@ -118,3 +118,16 @@ def test_select_examples_matches_across_all_concept_fields():
     gold = [_gold("x", ["throughput"])]
     c = ConceptCandidate(concept="Perf", why_suitable="", storyboard="shows throughput growth")
     assert [e.name for e in select_examples(c, gold)] == ["x"]
+
+
+from pathlib import Path
+
+
+def test_seed_gold_examples_are_valid():
+    gold_dir = Path(__file__).resolve().parents[2] / "examples" / "gold"
+    examples = load_gold_examples(gold_dir)
+    names = {e.name for e in examples}
+    assert {"pipeline-stages", "results-table", "system-graph"} <= names
+    for e in examples:
+        assert e.tags, f"{e.name} has no tags"
+        assert e.spec.beats, f"{e.name} has no beats"
