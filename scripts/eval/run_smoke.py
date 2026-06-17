@@ -41,6 +41,7 @@ from manim_skill.llm.analyze import analyze
 from manim_skill.llm.catalog import build_component_catalog
 from manim_skill.llm.client import OpenAIClient
 from manim_skill.llm.codegen import CodegenError, generate_spec
+from manim_skill.llm.examples import load_gold_examples
 from manim_skill.llm.input_prep import prepare_input
 from manim_skill.llm.pipeline import generate_specs, run_pipeline
 
@@ -117,12 +118,15 @@ def stage_codegen(model: str, input_path: Path, kind: str, workdir: Path) -> Non
     )
 
     catalog = build_component_catalog()
+    gold = load_gold_examples("examples/gold")
+    if gold:
+        print(f"[gold] {len(gold)} example(s) loaded")
     specs = []
     fails = []
     for i, concept in enumerate(concepts):
         t0 = time.perf_counter()
         try:
-            spec = generate_spec(client, concept, catalog)
+            spec = generate_spec(client, concept, catalog, gold_examples=gold)
             specs.append((i, concept.concept, spec))
             (workdir / f"spec_{i:02d}.json").write_text(
                 spec.model_dump_json(indent=2), encoding="utf-8"
@@ -161,6 +165,9 @@ def stage_regen(model: str, concepts_path: Path, out_dir: Path, indices: list[in
 
     concepts = [ConceptCandidate.model_validate(c) for c in raw]
     catalog = build_component_catalog()
+    gold = load_gold_examples("examples/gold")
+    if gold:
+        print(f"[gold] {len(gold)} example(s) loaded")
 
     print(f"[regen] {len(indices)} concept(s) from {concepts_path}")
     fails = []
@@ -171,7 +178,7 @@ def stage_regen(model: str, concepts_path: Path, out_dir: Path, indices: list[in
         concept = concepts[i]
         t0 = time.perf_counter()
         try:
-            spec = generate_spec(client, concept, catalog)
+            spec = generate_spec(client, concept, catalog, gold_examples=gold)
             (out_dir / f"spec_{i:02d}.json").write_text(
                 spec.model_dump_json(indent=2), encoding="utf-8"
             )

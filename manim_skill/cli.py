@@ -172,9 +172,10 @@ def _cmd_codegen_concepts(args) -> int:
 
     catalog = build_component_catalog()
     client = _build_llm_client_from_env()
-    gold_examples = load_gold_examples(args.gold_dir)
+    gold_dir = getattr(args, "gold_dir", "examples/gold")
+    gold_examples = load_gold_examples(gold_dir)
     if gold_examples:
-        print(f"gold examples: {len(gold_examples)} loaded from {args.gold_dir}")
+        print(f"gold examples: {len(gold_examples)} loaded from {gold_dir}")
 
     ok = 0
     failed = 0
