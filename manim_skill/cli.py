@@ -12,6 +12,7 @@ from manim_skill.llm.analyze import ConceptCandidate, analyze
 from manim_skill.llm.catalog import build_component_catalog
 from manim_skill.llm.client import OpenAIClient
 from manim_skill.llm.codegen import CodegenError, generate_spec
+from manim_skill.llm.examples import load_gold_examples
 from manim_skill.llm.input_prep import prepare_input
 from manim_skill.render.backend import render_batch
 from manim_skill.render.jobs import JobStatus
@@ -171,6 +172,9 @@ def _cmd_codegen_concepts(args) -> int:
 
     catalog = build_component_catalog()
     client = _build_llm_client_from_env()
+    gold_examples = load_gold_examples(args.gold_dir)
+    if gold_examples:
+        print(f"gold examples: {len(gold_examples)} loaded from {args.gold_dir}")
 
     ok = 0
     failed = 0
@@ -180,7 +184,9 @@ def _cmd_codegen_concepts(args) -> int:
             continue
         concept = concepts[i]
         try:
-            spec = generate_spec(client, concept, catalog)
+            spec = generate_spec(
+                client, concept, catalog, gold_examples=gold_examples
+            )
             (workdir / f"spec_{i:02d}.json").write_text(
                 spec.model_dump_json(indent=2), encoding="utf-8"
             )
@@ -350,6 +356,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--indices", default=None,
         help="comma-separated subset of concept indices to codegen "
              "(default: all)",
+    )
+    p_codegen.add_argument(
+        "--gold-dir", default="examples/gold",
+        help="directory of curated gold example specs to use as few-shot "
+             "(default: examples/gold; ignored if it doesn't exist)",
     )
     p_codegen.set_defaults(func=_cmd_codegen_concepts)
 

@@ -81,3 +81,30 @@ def test_run_pipeline_propagates_quality(tmp_path, monkeypatch):
     client = FakeLLMClient(responses=[_ANALYZE_RESP, _SPEC_RESP])
     run_pipeline(client, "text", "text", tmp_path, quality="high")
     assert captured["quality"] == "high"
+
+
+def test_generate_specs_threads_gold_examples(monkeypatch):
+    from manim_skill.llm import pipeline as pipeline_mod
+    from manim_skill.llm.examples import GoldExample
+    from manim_skill.spec.schema import SceneSpec
+    from manim_skill.llm.analyze import ConceptCandidate
+
+    captured = {}
+
+    def fake_generate_spec(client, concept, catalog, *, gold_examples=None):
+        captured["gold_examples"] = gold_examples
+        return SceneSpec.model_validate(
+            {"title": "X", "aspect_ratio": "16:9",
+             "beats": [{"component": "TextBeat", "params": {"text": "hi", "style": "title"}, "duration": 2.0}]}
+        )
+
+    monkeypatch.setattr(pipeline_mod, "analyze", lambda *a, **k: [ConceptCandidate(concept="c", why_suitable="w", storyboard="s")])
+    monkeypatch.setattr(pipeline_mod, "generate_spec", fake_generate_spec)
+
+    gold = [GoldExample(name="g", tags=["t"], spec=SceneSpec.model_validate(
+        {"title": "G", "aspect_ratio": "16:9",
+         "beats": [{"component": "TextBeat", "params": {"text": "g", "style": "title"}, "duration": 2.0}]}))]
+
+    from manim_skill.llm.client import FakeLLMClient
+    pipeline_mod.generate_specs(FakeLLMClient(response=""), "text", "text", gold_examples=gold)
+    assert captured["gold_examples"] is gold
