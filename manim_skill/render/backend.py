@@ -105,6 +105,23 @@ def _render_beat_job(
     return beat_job
 
 
+def _unresolved_records(clip: ClipJob) -> list[dict]:
+    """Detail of each beat that failed every tier (escalation candidates)."""
+    records = []
+    for index, bj in enumerate(clip.beat_jobs):
+        if bj.tier == TIER_UNRESOLVED:
+            records.append(
+                {
+                    "index": index,
+                    "component": bj.beat.component,
+                    "caption": bj.beat.caption,
+                    "error": (bj.error or "")[:500],
+                    "code": (bj.beat.code or "")[:500],
+                }
+            )
+    return records
+
+
 def render_batch(
     specs: list[SceneSpec],
     workdir,
@@ -192,6 +209,7 @@ def render_batch(
             gif_path=clip.gif_path,
             status=clip.status.value,
             tier_counts=per_clip["tier_counts"],
+            unresolved_beats=_unresolved_records(clip),
         )
         for clip, per_clip in zip(clip_jobs, metrics["per_clip"])
     ]

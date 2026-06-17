@@ -276,3 +276,26 @@ def test_render_batch_writes_summary_into_manifest(tmp_path, monkeypatch):
     assert manifest["summary"]["total_beats"] == 1
     assert manifest["summary"]["tier_counts"]["generated"] == 1
     assert manifest["concepts"][0]["tier_counts"]["generated"] == 1
+
+
+def test_render_batch_writes_unresolved_beats_to_manifest(tmp_path, monkeypatch):
+    _patch_docker_fns(monkeypatch, render_fn=_fake_render_raises)
+    specs = [
+        SceneSpec(
+            title="C",
+            beats=[Beat(component="raw", code="Rectangle()", caption="bar chart compare")],
+        )
+    ]
+    batch = render_batch(specs, tmp_path)
+    import json
+    import zipfile
+
+    with zipfile.ZipFile(batch.zip_path) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    ubs = manifest["concepts"][0]["unresolved_beats"]
+    assert len(ubs) == 1
+    assert ubs[0]["index"] == 0
+    assert ubs[0]["component"] == "raw"
+    assert ubs[0]["caption"] == "bar chart compare"
+    assert ubs[0]["code"] == "Rectangle()"
+    assert ubs[0]["error"]  # non-empty traceback/message
