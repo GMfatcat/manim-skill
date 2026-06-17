@@ -1,6 +1,7 @@
 import pytest
 
 from manim_skill.llm.analyze import ConceptCandidate
+from manim_skill.llm.catalog import build_component_catalog
 from manim_skill.llm.client import FakeLLMClient
 from manim_skill.llm.codegen import CodegenError, generate_spec
 from manim_skill.spec.schema import SceneSpec
@@ -186,3 +187,47 @@ def test_latex_suspicious_formula_triggers_one_reask():
     spec = generate_spec(client, _CONCEPT, catalog="(catalog)")
     assert len(client.calls) == 2  # valid-but-suspicious, then the lint re-ask
     assert spec.beats[0].params["formula"] == "\\mathbf{x}"
+
+
+def test_generate_spec_injects_selected_gold_examples():
+    from manim_skill.llm.examples import GoldExample
+    from manim_skill.spec.schema import SceneSpec
+
+    gold_spec = SceneSpec.model_validate(
+        {
+            "title": "Gold Pipeline",
+            "aspect_ratio": "16:9",
+            "beats": [
+                {"component": "PipelineDiagram",
+                 "params": {"stages": ["A", "B", "C"]}, "duration": 4.0}
+            ],
+        }
+    )
+    gold = [GoldExample(name="pipeline-stages", tags=["pipeline", "stages"], spec=gold_spec)]
+    concept = ConceptCandidate(
+        concept="A pipeline of stages",
+        why_suitable="it has clear sequential stages",
+        storyboard="boxes flow left to right",
+    )
+    valid = (
+        '{"title":"X","aspect_ratio":"16:9","beats":'
+        '[{"component":"TextBeat","params":{"text":"hi","style":"title"},"duration":2.0}]}'
+    )
+    client = FakeLLMClient(response=valid)
+    generate_spec(client, concept, build_component_catalog(), gold_examples=gold)
+
+    user_prompt = client.calls[0][1]
+    assert "Reference specs for SIMILAR concepts" in user_prompt
+    assert "pipeline-stages" in user_prompt
+    assert "Gold Pipeline" in user_prompt  # the gold spec's title made it in
+
+
+def test_generate_spec_no_gold_examples_leaves_prompt_unchanged():
+    concept = ConceptCandidate(concept="C", why_suitable="w", storyboard="s")
+    valid = (
+        '{"title":"X","aspect_ratio":"16:9","beats":'
+        '[{"component":"TextBeat","params":{"text":"hi","style":"title"},"duration":2.0}]}'
+    )
+    client = FakeLLMClient(response=valid)
+    generate_spec(client, concept, build_component_catalog())
+    assert "Reference specs for SIMILAR concepts" not in client.calls[0][1]

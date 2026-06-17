@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from manim_skill.llm.analyze import ConceptCandidate
 from manim_skill.llm.client import LLMClient
+from manim_skill.llm.examples import GoldExample, select_examples
 from manim_skill.spec.parse import SpecParseError, parse_spec_text
 from manim_skill.spec.schema import SceneSpec
 from manim_skill.spec.validate import SpecValidationError, validate_spec
@@ -85,8 +86,24 @@ COMPONENT CATALOG:
 __CATALOG__"""
 
 
-def _build_user_prompt(concept: ConceptCandidate) -> str:
+def _build_user_prompt(
+    concept: ConceptCandidate, examples: list[GoldExample] | None = None
+) -> str:
+    prefix = ""
+    if examples:
+        blocks = [
+            f"// {ex.name} (tags: {', '.join(ex.tags)})\n"
+            f"{ex.spec.model_dump_json(indent=2)}"
+            for ex in examples
+        ]
+        prefix = (
+            "Reference specs for SIMILAR concepts — imitate their structure "
+            "and component choices, do NOT copy their content:\n\n"
+            + "\n\n".join(blocks)
+            + "\n\n"
+        )
     return (
+        f"{prefix}"
         f"Concept: {concept.concept}\n"
         f"Why it animates well: {concept.why_suitable}\n"
         f"Storyboard:\n{concept.storyboard}\n\n"
@@ -98,6 +115,8 @@ def generate_spec(
     client: LLMClient,
     concept: ConceptCandidate,
     catalog: str,
+    *,
+    gold_examples: list[GoldExample] | None = None,
 ) -> SceneSpec:
     """Stage 2: turn one concept into a validated SceneSpec.
 
@@ -110,7 +129,8 @@ def generate_spec(
     from manim_skill.spec.lint import lint_spec
 
     system = _CODEGEN_SYSTEM.replace("__CATALOG__", catalog)
-    base_user = _build_user_prompt(concept)
+    selected = select_examples(concept, gold_examples) if gold_examples else []
+    base_user = _build_user_prompt(concept, selected)
 
     last_error = ""
     valid_spec: SceneSpec | None = None
