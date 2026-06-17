@@ -38,6 +38,24 @@ class Cluster:
     samples: list[Escalation]
 
 
+def find_run_zips(paths) -> list[Path]:
+    """All `output.zip` files implied by the given dir / zip paths.
+
+    A directory is scanned recursively for `output.zip`; a `.zip` file is
+    taken as-is; anything else contributes nothing. This is the set of runs
+    backflow inspects — useful both for collecting escalations and for
+    reporting how many runs were scanned.
+    """
+    found: list[Path] = []
+    for raw in paths:
+        p = Path(raw)
+        if p.is_dir():
+            found.extend(sorted(p.rglob("output.zip")))
+        elif p.suffix == ".zip" and p.is_file():
+            found.append(p)
+    return found
+
+
 def collect_escalations(paths) -> list[Escalation]:
     """Flatten every manifest's `unresolved_beats` under the given paths.
 
@@ -46,34 +64,26 @@ def collect_escalations(paths) -> list[Escalation]:
     the `unresolved_beats` field are skipped silently.
     """
     escalations: list[Escalation] = []
-    for raw in paths:
-        p = Path(raw)
-        if p.is_dir():
-            zips = sorted(p.rglob("output.zip"))
-        elif p.suffix == ".zip" and p.is_file():
-            zips = [p]
-        else:
-            zips = []
-        for zp in zips:
-            try:
-                with zipfile.ZipFile(zp) as zf:
-                    manifest = json.loads(zf.read("manifest.json"))
-            except (zipfile.BadZipFile, KeyError, json.JSONDecodeError, OSError):
-                continue
-            for concept in manifest.get("concepts", []):
-                name = concept.get("concept", "")
-                for ub in concept.get("unresolved_beats") or []:
-                    escalations.append(
-                        Escalation(
-                            source=str(zp),
-                            concept=name,
-                            index=ub.get("index", -1),
-                            component=ub.get("component", ""),
-                            caption=ub.get("caption"),
-                            code=ub.get("code", ""),
-                            error=ub.get("error", ""),
-                        )
+    for zp in find_run_zips(paths):
+        try:
+            with zipfile.ZipFile(zp) as zf:
+                manifest = json.loads(zf.read("manifest.json"))
+        except (zipfile.BadZipFile, KeyError, json.JSONDecodeError, OSError):
+            continue
+        for concept in manifest.get("concepts", []):
+            name = concept.get("concept", "")
+            for ub in concept.get("unresolved_beats") or []:
+                escalations.append(
+                    Escalation(
+                        source=str(zp),
+                        concept=name,
+                        index=ub.get("index", -1),
+                        component=ub.get("component", ""),
+                        caption=ub.get("caption"),
+                        code=ub.get("code", ""),
+                        error=ub.get("error", ""),
                     )
+                )
     return escalations
 
 

@@ -2,9 +2,12 @@ import json
 import zipfile
 
 from manim_skill.backflow import (
+    Cluster,
     Escalation,
     cluster_escalations,
     collect_escalations,
+    find_run_zips,
+    render_report,
 )
 
 
@@ -44,6 +47,25 @@ def test_collect_escalations_skips_bad_zip(tmp_path):
     assert collect_escalations([tmp_path]) == []
 
 
+def test_collect_escalations_accepts_direct_zip(tmp_path):
+    zp = tmp_path / "output.zip"
+    _write_zip(zp, _manifest(_ub("direct zip path")))
+    escs = collect_escalations([zp])
+    assert len(escs) == 1
+    assert escs[0].code == "direct zip path"
+
+
+def test_find_run_zips_counts_dirs_and_direct_zips(tmp_path):
+    (tmp_path / "r1").mkdir()
+    _write_zip(tmp_path / "r1" / "output.zip", _manifest())
+    direct = tmp_path / "loose.zip"
+    _write_zip(direct, _manifest())
+    # a dir contributes its output.zip; a .zip path counts as-is; a missing
+    # path contributes nothing.
+    zips = find_run_zips([tmp_path, direct, tmp_path / "nope"])
+    assert len(zips) == 2
+
+
 def test_cluster_escalations_groups_by_shared_keyword():
     escs = [
         Escalation("z", "C", 0, "raw", "a bar chart", "draw bars", "boom"),
@@ -72,7 +94,14 @@ def test_cluster_escalations_ranked_and_empty():
     assert cluster_escalations(escs, min_count=2) == []
 
 
-from manim_skill.backflow import Cluster, render_report
+def test_cluster_escalations_caps_samples():
+    escs = [
+        Escalation("z", "C", i, "raw", "a bar chart", "draw bars", "boom")
+        for i in range(5)
+    ]
+    cluster = cluster_escalations(escs, min_count=2, max_samples=3)[0]
+    assert cluster.count == 5
+    assert len(cluster.samples) == 3
 
 
 def test_render_report_lists_patterns():

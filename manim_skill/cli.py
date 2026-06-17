@@ -7,7 +7,12 @@ import sys
 from pathlib import Path
 
 from manim_skill.backend_client import BackendClient, BackendClientError
-from manim_skill.backflow import cluster_escalations, collect_escalations, render_report
+from manim_skill.backflow import (
+    cluster_escalations,
+    collect_escalations,
+    find_run_zips,
+    render_report,
+)
 
 from manim_skill.llm.analyze import ConceptCandidate, analyze
 from manim_skill.llm.catalog import build_component_catalog
@@ -277,7 +282,7 @@ def _cmd_gen_skill_docs(args) -> int:
 def _cmd_backflow(args) -> int:
     """Cluster repeated unresolved beats into candidate-component suggestions."""
     escalations = collect_escalations(args.paths)
-    runs = len({e.source for e in escalations})
+    runs = len(find_run_zips(args.paths))
     clusters = cluster_escalations(escalations, min_count=args.min_count)
     report = render_report(clusters, total=len(escalations), runs=runs)
     if args.output:
