@@ -129,7 +129,12 @@ def test_seed_gold_examples_are_valid():
     gold_dir = Path(__file__).resolve().parents[2] / "examples" / "gold"
     examples = load_gold_examples(gold_dir)
     names = {e.name for e in examples}
-    assert {"pipeline-stages", "results-table", "system-graph"} <= names
+    assert {
+        "pipeline-stages",
+        "results-table",
+        "system-graph",
+        "bar-comparison",
+    } <= names
     for e in examples:
         assert e.tags, f"{e.name} has no tags"
         assert e.spec.beats, f"{e.name} has no beats"

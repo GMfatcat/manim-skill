@@ -1,0 +1,12 @@
+{
+  "tags": ["throughput", "comparison", "benchmark", "speedup", "performance", "bars", "chart", "baseline"],
+  "spec": {
+    "title": "Throughput Comparison",
+    "aspect_ratio": "16:9",
+    "beats": [
+      {"component": "TextBeat", "params": {"text": "Throughput Comparison", "subtitle": "baseline vs ours", "style": "title"}, "duration": 2.0},
+      {"component": "BarChart", "params": {"title": "Requests per second", "values": [1, 5, 14, 36.9], "labels": ["Baseline", "v1", "v2", "Ours"], "highlight": 3}, "duration": 4.5},
+      {"component": "TextBeat", "params": {"text": "Takeaway", "style": "bullets", "bullets": ["Each version lifts throughput", "The final design wins by a wide margin"]}, "duration": 3.5}
+    ]
+  }
+}
