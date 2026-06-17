@@ -12,7 +12,7 @@
 
 - **Params 範圍**：`values + labels + title + highlight`——`highlight` 正對應 ORCA「標記勝出那根（36.9×）」的需求。
 - 仿最相近的既有元件 `PlotEvolution` 的結構與慣例。
-- 用 manim 內建 `BarChart` mobject，不手刻長條。
+- **手刻長條**（`Rectangle` 共用基線），**不**用 manim 內建 `BarChart` mobject：後者會為 y 軸數字觸發 LaTeX（`Tex`），dev 機無 LaTeX 會直接 `FileNotFoundError`，且違背框架刻意避開 LaTeX 的原則、讓 `build` 無法在 fast-suite 測。手刻純 mobject 既可在 fast-suite 測、又能完全掌控主題色。（此點為 brainstorm 後實作探查發現的修正。）
 
 ### 不在範圍
 
@@ -29,12 +29,14 @@
 - `title: str | None = None`。
 - `highlight: int | None = None` — 要強調的長條索引。
 
-**`build(params) -> Mobject`**：用 manim 內建 `BarChart`。
-- 一般長條 `THEME.PRIMARY`；當 `highlight` 有值，其餘長條改 `THEME.PRIMARY_SOFT`（淡化）、被選那根維持 `THEME.PRIMARY`（滿強度）——「淡化其餘、強調一根」，語意中性（不誤用 WARN 表示警告）。
-- `y_range` 由 values 自動算：`y_max = max(values)`（若全為 0 則退化處理避免 0 範圍），`[0, y_max * 1.1, y_max / 5 or 1]`，避免 step 為 0。
-- 軸顏色 `THEME.INK_SOFT`；`bar_names = labels or []`。
-- 有 `title` 時用 `body_text(title, size=28)` 置於圖上方（`next_to(chart, UP)`）。
-- 全部包進 `VGroup` 回傳。
+**`build(params) -> Mobject`**：手刻長條（純 mobject，無 LaTeX）。
+- `y_max = max(values)`，若 `<= 0` 退化為 `1.0`（避免除以 0）；每根高度 `= (value / y_max) * MAX_H`（`MAX_H ≈ 4.0` 場景單位），下限夾 `0.01` 避免零高 Rectangle。
+- 每根 `Rectangle(width=BAR_W, height=h, fill_color=color, fill_opacity=0.9, stroke_color=color, stroke_width=2)`；`VGroup(...).arrange(RIGHT, buff=0.4, aligned_edge=DOWN)` 讓所有長條**底部對齊共用基線**。
+- 顏色：一般 `THEME.PRIMARY`；當 `highlight` 有值，其餘改 `THEME.PRIMARY_SOFT`（淡化）、被選那根維持 `THEME.PRIMARY`（滿強度）——「淡化其餘、強調一根」，語意中性（不誤用 WARN）。
+- 一條基線 `Line(bars 的 DL 角, DR 角, color=THEME.RULE)`。
+- 有 `labels` 時每根下方 `label_text(name).next_to(bar, DOWN, buff=0.2)`。
+- 有 `title` 時 `body_text(title, size=28)` 置於整體上方。
+- 全部包進 `VGroup` 回傳。長條為相對高度（不畫 y 軸數字——數字標註不在範圍；值的脈絡由 labels/title 承載）。
 
 **`animate(scene, mobject, params)`**：`scene.play(Create(mobject))`（與 `PlotEvolution` 一致）。
 
@@ -73,7 +75,7 @@
 |---|---|
 | 元件本體 | **新建** `manim_skill/components/bar_chart.py`（仿 `plot_evolution.py`） |
 | 主題色 / 文字 | `components/theme.py`：`THEME.PRIMARY / PRIMARY_SOFT / INK_SOFT`、`body_text` |
-| 渲染 | manim 內建 `BarChart` mobject |
+| 渲染 | 手刻 `Rectangle` 長條 + 共用基線（無 LaTeX；`manim.BarChart` 會觸發 Tex 故不用） |
 | 驗證 | `BarChartParams` 的 `model_validator`；`spec/validate.py` 既有逐 beat 驗證會套用 |
 | catalog / skill docs | 自動探索；**跑 `gen-skill-docs`** 過 drift 測試（`tests/test_skill_reference_current.py`） |
 | 飛輪連結 | **新建** `examples/gold/bar-comparison.json`（用 golden-examples 機制） |
