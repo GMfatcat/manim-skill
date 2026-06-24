@@ -442,6 +442,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # The dev console is cp950; force UTF-8 so unicode in titles / captions
+    # (em-dashes, non-breaking hyphens, CJK) doesn't crash on print.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError):
+            pass
     parser = build_parser()
     args = parser.parse_args(argv)
     return args.func(args)
