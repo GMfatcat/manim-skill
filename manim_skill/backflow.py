@@ -6,17 +6,36 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-_WORD = re.compile(r"\w+")
+# Alphabetic runs only: lowercasing first, this splits snake_case manim
+# methods (set_color -> set, color; next_to -> next, to) and strips digits,
+# so the single-word stopwords below catch the boilerplate parts.
+_WORD = re.compile(r"[a-z]+")
 
 # Common manim / python / english noise (3+ chars; shorter tokens are dropped
-# by the length>=3 filter). Keeps domain words (bar, tree, timeline, matrix)
-# surfacing instead of the boilerplate every raw beat contains.
+# by the length>=3 filter). Keeps domain words (bar, scheduling, attention,
+# split, merge, throughput, matrix, tree) surfacing instead of the manim/python
+# boilerplate every raw beat contains.
 _STOPWORDS = frozenset({
+    # framework / animation verbs + scene plumbing
     "self", "play", "add", "create", "wait", "scene", "vgroup", "text",
     "color", "animate", "run_time", "import", "numpy", "math", "def",
     "return", "for", "the", "and", "with", "next_to", "shift", "set",
     "fill", "stroke", "mobject", "group", "new", "get", "this", "that",
-    "fadein", "fadeout", "transform", "label",
+    "fadein", "fadeout", "transform", "label", "next", "run", "write",
+    "indicate", "grow", "draw", "show", "flash", "become", "always",
+    # python builtins / keywords
+    "range", "len", "list", "dict", "enumerate", "append", "print", "int",
+    "str", "float", "true", "false", "none", "while", "else", "elif",
+    "lambda", "def", "not",
+    # directions / layout helpers
+    "down", "left", "right", "origin", "out", "edge", "corner", "move",
+    "arrange", "scale", "rotate", "center", "opacity", "width", "height",
+    "buff", "aligned", "shift", "pos", "position",
+    # generic mobjects
+    "line", "dot", "arrow", "circle", "square", "rectangle", "rect",
+    "polygon", "axes", "brace", "arc", "point", "value",
+    # theme palette / font names injected into every raw beat
+    "ink", "primary", "soft", "faint", "warn", "rule",
 })
 
 

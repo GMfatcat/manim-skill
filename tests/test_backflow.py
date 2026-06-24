@@ -94,6 +94,22 @@ def test_cluster_escalations_ranked_and_empty():
     assert cluster_escalations(escs, min_count=2) == []
 
 
+def test_cluster_escalations_filters_manim_code_primitives():
+    escs = [
+        Escalation("z", "C", 0, "raw", "schedule bar",
+                   "for i in range(3): b.set_color(DOWN)", "e"),
+        Escalation("z", "C", 1, "raw", "schedule bar",
+                   "x.set_color(); arrange(DOWN)", "e"),
+    ]
+    clusters = cluster_escalations(escs, min_count=2)
+    kws = {c.keyword for c in clusters}
+    # manim/python code mechanics are filtered (snake_case split + stopwords)
+    for noise in ("range", "color", "set", "down", "arrange"):
+        assert noise not in kws
+    # domain words from the captions survive
+    assert "schedule" in kws and "bar" in kws
+
+
 def test_cluster_escalations_caps_samples():
     escs = [
         Escalation("z", "C", i, "raw", "a bar chart", "draw bars", "boom")
